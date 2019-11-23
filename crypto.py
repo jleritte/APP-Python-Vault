@@ -1,5 +1,5 @@
 # crypto functions
-import os, hashlib, fileinput
+import os, hashlib, fileinput, glob, stdiomask
 import binascii as ba
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
@@ -42,36 +42,46 @@ def decrypt(key, passphrase, cipherblock):
 
 	return plaintext
 
-
+def unlock_data(key,passphrase,data):
+	for i,item in enumerate(data):
+		item['plain'] = decrypt(key,passphrase,item['cipher'])
+		del item['cipher']
+		data[i] = item
+	return data
 
 # file read/write functions
-def read_stored_key(name):
-	with fileinput.input(name,True,'.bak') as f:
-		for line in f:
-			print(line)
-	# vault = open(name,"a+")
-	# vault.seek(0,0)
-
-	# enparms = vault.readlines()
-	# enparms = enparms[0].strip() if len(enparms) else "00"
-	# vault.close()
-	return '00'#enparms
-
-def store_key(name,key):
-	vault = open(name,"w")
-	vault.write(str(ba.b2a_hex(key))[2:-1]+'\n')
-	vault.close()
-
-def store_record(name,record):
-	with open(name) as f:
-		text = '\n'.join(f.readlines()[lambda line: line.strip() if line.strip() != record.entry else record.cipher])
+def store_entry(name,record):
+	found = 0
+	text = 0
+	with open(name,'r') as f:
+		text = f.readlines()
+		for i,line in enumerate(text):
+			line = line.strip()
+			if line == record["entry"]:
+				line = record["cipher"]
+				found = 1
+			text[i] = line
+		if not found:
+			text.append(record["cipher"])
 
 	with open(name,'w') as f:
-		f.write(text)
+		f.write('\n'.join(text))
 
-def parse_records(name):
-	with open(name) as f:
-		print(f.read())
+def parse_file(name):
+	content = []
+	with open(name,'a+') as f:
+		f.seek(0,0)
+		for i,line in enumerate(f.readlines()):
+			temp = {'entry': line.strip()}
+			line = ba.a2b_hex(temp["entry"])
+			if i < 1:
+				temp['salt'] = line[:16]
+				temp['key'] = line[16:]
+			else:
+				temp['cipher'] = line
+			content.append(temp)
+	return content
+
 
 
 
@@ -82,40 +92,38 @@ def parse_records(name):
 
 
 # testing code down here
-username = input("Who are you? ")+".hex"
-shex = ba.a2b_hex(read_stored_key(username))
-passphrase = ''
-salt = shex[:16] if shex != b'\x00' else None
+username = raw_input("Who are you? ")+".hex"
+data = parse_file(username)
+salt = data[0]['salt'] if len(data) else None
+passphrase = stdiomask.getpass("Enter Passphrase: ",'*')
 key_slice = len(passphrase) % 32
+generated_salt, derived_key = derive_key(passphrase,salt)
+if len(data):
+	del data[0]['salt']
+	print "UnWrapping Key, Please wait"
+	data[0]['key'] = decrypt(derived_key[key_slice:key_slice+32],passphrase,data[0]['key'])
+	data = data[:1] + unlock_data(data[0]['key'],passphrase,data[1:])
+else:
+	print "Generating Key, Please wait"
+	key = os.urandom(int(256/8))
+	wrapped_key = encrypt(derived_key[key_slice:key_slice+32],key,passphrase)
+	store_entry(username,{"cipher":ba.b2a_hex(generated_salt+wrapped_key),'entry':''})
+	data.append({'key':key,'salt':generated_salt,'entry':ba.b2a_hex(generated_salt+wrapped_key)})
+
+print "Welcome! Ready to Encrypt"
 while True:
-	passphrase = bytes(input("Enter Passphrase: "),'utf-8')
-	if passphrase == b'q':
+	message = raw_input("What to lock: ")
+	if message == 'q':
 		break
 
-	generated_salt, derived_key = derive_key(passphrase,salt)
-	salt = generated_salt
-	if shex != b'\x00':
-		print("UnWrapping Key, Please wait")
-		key = decrypt(derived_key[key_slice:key_slice+32],passphrase,shex[16:])
-		if key == "Invalid Passphrase":
-			print(key)
-			continue
-	else:
-		print("Generating Key, Please wait")
-		key = os.urandom(int(256/8))
-		wrapped_key = encrypt(derived_key[key_slice:key_slice+32],key,passphrase)
-		store_key(username,salt+wrapped_key)
-		print(salt, wrapped_key)
-		print(ba.b2a_hex(salt+wrapped_key))
+	record = {'plain': message}
+	record['cipher'] = ba.b2a_hex(encrypt(data[0]['key'], message, passphrase))
+	record["entry"] = record['cipher']
+	store_entry(username,record)
+	del record['cipher']
+	data.append(record)
 
-
-	print("Welcome Ready to Encrypt")
-	message = bytes(input("What to lock: "),'utf-8')
-	if message == b'q':
-		break
-
-	# print len(message)
-	cipherblock = encrypt(key, message, passphrase)
-	print(cipherblock)
-	record = {"cipher": cipherblock,"entry": ""}
-	# print decrypt(key,passphrase,cipherblock)
+	for item in data:
+		if 'plain' in item.keys():
+			print item['plain']
+	print
