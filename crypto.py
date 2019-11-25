@@ -100,7 +100,6 @@ key_slice = len(passphrase) % 32
 generated_salt, derived_key = derive_key(passphrase,salt)
 if len(data):
 	del data[0]['salt']
-	print "UnWrapping Key, Please wait"
 	data[0]['key'] = decrypt(derived_key[key_slice:key_slice+32],passphrase,data[0]['key'])
 	data = data[:1] + unlock_data(data[0]['key'],passphrase,data[1:])
 else:
@@ -110,8 +109,11 @@ else:
 	store_entry(username,{"cipher":ba.b2a_hex(generated_salt+wrapped_key),'entry':''})
 	data.append({'key':key,'salt':generated_salt,'entry':ba.b2a_hex(generated_salt+wrapped_key)})
 
-print "Welcome! Ready to Encrypt"
 while True:
+	for item in data:
+		if 'plain' in item.keys():
+			print item['plain']
+	print
 	message = raw_input("What to lock: ")
 	if message == 'q':
 		break
@@ -122,8 +124,3 @@ while True:
 	store_entry(username,record)
 	del record['cipher']
 	data.append(record)
-
-	for item in data:
-		if 'plain' in item.keys():
-			print item['plain']
-	print
