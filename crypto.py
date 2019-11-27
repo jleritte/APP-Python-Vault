@@ -1,5 +1,5 @@
 # crypto functions
-import os, hashlib, fileinput, glob, stdiomask
+import os, hashlib, fileinput, glob, stdiomask, time
 import binascii as ba
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
@@ -104,6 +104,7 @@ if len(data):
 	data = data[:1] + unlock_data(data[0]['key'],passphrase,data[1:])
 else:
 	print "Generating Key, Please wait"
+	time.sleep(1)
 	key = os.urandom(int(256/8))
 	wrapped_key = encrypt(derived_key[key_slice:key_slice+32],key,passphrase)
 	store_entry(username,{"cipher":ba.b2a_hex(generated_salt+wrapped_key),'entry':''})
