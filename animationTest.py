@@ -4,114 +4,154 @@ from file_handle import *
 import curses
 import traceback
 
-# UI Variables
-quitText = 'Type exit to close this screen'
-exit = 1
-props = ['Who are you? ','Enter passphrase: ']
-prop = 0
-y = 1
-x = 1
-curs = 0
 
+quitText = 'Press "ESC" to close this screen'
+welcomeText = 'Welcome Please Create a Record'
+menuText = ['New Record','Edit Record','Delete Record']
+prompts = ['Who are you? ','Enter passphrase: ']
+selected = (0,1)
+size = None
+step = 0
 
-# Data Variables
-username = ''
-data = ''
-salt = None
-passphrase = ''
-key_slice = ''
-generated_salt = ''
-derived_key = ''
-
-try:
-  # -- Initialize --
-  stdscr = curses.initscr()   # initialize curses screen
-  curses.noecho()             # turn off auto echoing of keypress on to screen
-  curses.cbreak()             # enter break mode where pressing Enter key
-                              #  after keystroke is not required for it to register
-  stdscr.keypad(1)            # enable special Key values such as curses.KEY_LEFT etc
-  curses.curs_set(curs)
-
+def init():
+  global size
+  stdscr = curses.initscr()
+  curses.noecho()
+  curses.cbreak()
+  stdscr.keypad(1)
   size = stdscr.getmaxyx()
+  paintBorder(stdscr)
+  return stdscr
 
-  # -- Perform an action with Screen --
-  stdscr.border(0)
-  stdscr.addstr(size[0]-1, size[1]/2 - len(quitText)/2, quitText, curses.A_NORMAL)
-  stdscr.addstr(y, x, props[prop], curses.A_BOLD)
+def paintBorder(scr):
+  scr.border(0)
+  scr.addstr(size[0]-1, size[1]/2 - len(quitText)/2, quitText)
 
+
+def printPrompt(scr, pos):
+  global step
+  prompt = prompts[step]
+  scr.addstr(pos[0],pos[1],prompt,curses.A_BOLD)
+  step += 1
+  return (pos[0],pos[1]+len(prompt))
+
+def textEntry(scr, pos, mask=None):
   strng = []
-  while exit:
-    ch = stdscr.getch()
-    stdscr.addstr(1,size[1]-1-len(str(ch)),str(ch),curses.A_STANDOUT)
+  while 1:
+    ch = scr.getch()
     if ch == 10:
-      if ''.join(strng) == 'exit':
-        exit = 0
-      else:
-        if prop == 0:
-          username = ''.join(strng) + '.hex'
-          data = parse_file(username)
-          salt = data[0]['salt'] if len(data) else None
-        elif prop == 1:
-          passphrase = ''.join(strng)
-          key_slice = len(passphrase) % 32
-          generated_salt, derived_key = derive_key(passphrase,salt)
-          if len(data):
-            del data[0]['salt']
-            data[0]['key'] = decrypt(derived_key[key_slice:key_slice+32],passphrase,data[0]['key'])
-            data = data[:1] + unlock_data(data[0]['key'],passphrase,data[1:])
-        strng = []
-        y += 1
-        prop += 1
-        if prop < len(props):
-          stdscr.addstr(y,1,props[prop],curses.A_BOLD)
-          x = len(props[prop])+1
-          continue
+      break
+    elif ch == 27:
+      strng = []
+      break
     elif ch == 263:
-      stdscr.addstr(y ,x ,''.join([' ']*len(strng)))
       if len(strng):
         strng.pop()
+        scr.addstr(pos[0] ,pos[1]+len(strng) ,' ')
       else:
         curses.flash()
-    elif ch == 9:
-      curs = curs + 1 % 3
-      stdscr.addstr(str(curs))
-      curses.curs_set(curs)
-    elif ch == 258:
-      y += 1
-      stdscr.move(y,x)
-    elif ch == 259:
-      y -= 1
-      stdscr.move(y,x)
-    elif ch == 260:
-      x -= 1
-      stdscr.move(y,x)
-    elif ch == 261:
-      x += 1
-      stdscr.move(y,x)
     elif ch < 256:
       strng.append(chr(ch))
-    if prop == 1:
-      stdscr.addstr(y, x, ''.join(['*']*len(strng)))
-    elif len(data):
-      for i,l in enumerate(data):
-        if 'plain' in l.keys():
-          stdscr.addstr(y+i,1,l['plain'])
-          stdscr.move(1,1)
+    if mask:
+      scr.addstr(pos[0] ,pos[1], ''.join([mask]*len(strng)))
     else:
-      stdscr.addstr(y, x, ''.join(strng))
+      scr.addstr(pos[0] ,pos[1], ''.join(strng))
+  return ''.join(strng) if len(strng) else None
 
-  # -- End of user code --
+def printData(scr, pos, data):
+  if len(data) == 1:
+    scr.addstr(pos[0],pos[1],welcomeText,curses.A_BOLD)
+  else:
+    for i,item in enumerate(data):
+      if 'plain' in item.keys():
+        if i == selected[1]:
+          scr.addstr(pos[0]+i,pos[1],item['plain'],curses.A_STANDOUT)
+        else:
+          scr.addstr(pos[0]+i,pos[1],item['plain'])
+    curses.curs_set(0)
 
-except:
-  stdscr.keypad(0)
-  curses.echo()
-  curses.nocbreak()
-  curses.endwin()
-  traceback.print_exc()     # print trace back log of the error
+# TODO def quit method
 
-finally:
-  # --- Cleanup on exit ---
-  stdscr.keypad(0)
-  curses.echo()
-  curses.nocbreak()
-  curses.endwin()
+def main():
+  global selected
+  # UI Variables
+  exit = 1
+  pos = (1,1)
+  data = []
+
+  try:
+    stdscr = init()
+    while exit:
+      if not len(data):
+        username = textEntry(stdscr,printPrompt(stdscr,pos))
+        if username == None:
+          break
+        data = parse_file(username + '.hex')
+        salt = data[0]['salt'] if len(data) else None
+        passphrase = textEntry(stdscr,printPrompt(stdscr,(pos[0]+1,pos[1])),'*')
+        if passphrase == None:
+          break
+        key_slice = len(passphrase) % 32
+        generated_salt, derived_key = derive_key(passphrase,salt)
+        if len(data):
+          del data[0]['salt']
+          data[0]['key'] = decrypt(derived_key[key_slice:key_slice+32],passphrase,data[0]['key'])
+          data = data[:1] + unlock_data(data[0]['key'],passphrase,data[1:])
+        else:
+          key = os.urandom(int(256/8))
+          wrapped_key = encrypt(derived_key[key_slice:key_slice+32],key,passphrase)
+          store_entry(username,{"cipher":ba.b2a_hex(generated_salt+wrapped_key),'entry':''})
+          data = [{'key':key,'salt':generated_salt,'entry':ba.b2a_hex(generated_salt+wrapped_key)}]
+
+      stdscr.clear()
+      paintBorder(stdscr)
+      stdscr.addstr(1,1,"  ".join( menuText) , curses.A_BOLD)
+      printData(stdscr,pos,data)
+      ch = stdscr.getch()
+
+      stdscr.addstr(1,size[1]-1-len(str(ch)),str(ch),curses.A_STANDOUT)
+
+
+      if ch == 27:
+        # pop = curses.newwin(3,40,size[0]/2-1,size[1]/2-20)
+        # pop.border(0)
+        # pop.addstr(1,1,"Are you sure you want to quit?(y or n)")
+        # curses.curs_set(0)
+        # ch = pop.getch()
+        # if ch == ord('y'):
+        exit = 0
+        # else:
+        #   stdscr.redrawwin()
+        #   stdscr.move(pos[0],pos[1])
+        #   curses.curs_set(1)
+        # continue
+
+      if ch == 258: #DOWN
+        select = selected[1] + 1 if selected[1] + 1 < len(data)  else len(data) - 1
+        selected = (selected[0],select)
+      elif ch == 259: #UP
+        select = selected[1] - 1 if selected[1] - 1 > 1  else 1
+        selected = (selected[0],select)
+    #   elif ch == 260: #LEFT
+    #     x -= 1
+    #     stdscr.move(y,x)
+    #   elif ch == 261: #RIGHT
+    #     x += 1
+    #     stdscr.move(y,x)
+      # stdscr.getch()
+
+  except:
+    stdscr.keypad(0)
+    curses.echo()
+    curses.nocbreak()
+    curses.endwin()
+    traceback.print_exc()
+
+  finally:
+    stdscr.keypad(0)
+    curses.echo()
+    curses.nocbreak()
+    curses.endwin()
+
+
+main()

@@ -3,7 +3,7 @@ import binascii as ba
 
 def store_entry(name,record):
 	found = 0
-	text = 0
+	text = ''
 	with open(name,'r') as f:
 		text = f.readlines()
 		for i,line in enumerate(text):
