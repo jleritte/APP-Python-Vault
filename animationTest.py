@@ -4,11 +4,11 @@ from file_handle import *
 import curses
 import traceback
 
-
-quitText = 'Press "ESC" to close this screen'
+# '↑↓: Select Record-←→: Select Action-
+quitText = 'Enter: Confirm-Esc: Exit'
+controlstr =  'Enter: Confirm-Esc: Cancel'
 welcomeText = 'Welcome Please Create a Record'
 menuText = ['New Record','Edit Record','Delete Record']
-# prompts =
 selected = (0,1)
 size = None
 col = None
@@ -22,23 +22,23 @@ def init():
   curses.cbreak()
   stdscr.keypad(1)
   size = stdscr.getmaxyx()
-  col = size[1] / 4
+  col = int(size[1] / 4)
   paintBorder(stdscr)
   return stdscr
 
 def paintBorder(scr):
   scr.border(0)
-  scr.addstr(size[0]-1, size[1]/2 - len(quitText)/2, quitText)
+  scr.addstr(size[0]-1, int(size[1]/2 - len(quitText)/2), quitText)
 
 def printPrompt(scr, pos, step, prompts = ['Who are you? ','Enter passphrase: ']):
   prompt = prompts[step]
   scr.addstr(pos[0],pos[1],prompt,curses.A_BOLD)
   return (pos[0],pos[1]+len(prompt))
 
-def fillRecord(old = ('',)):
-  controlstr =  "Enter: Confirm - Esc: Cancel"
+def fillRecord(old):
+  old = old['plain'] if old else ('',)
   curses.curs_set(1)
-  pop = curses.newwin(5,40,size[0]/2-3,size[1]/2-20)
+  pop = curses.newwin(5,40,int(size[0]/2-3),int(size[1]/2-20))
   pop.border(0)
   prompts = ['Record Name: ','Password: ','Username: ']
 
@@ -64,6 +64,22 @@ def fillRecord(old = ('',)):
 
   return (name, pword, uname)
 
+def deleteRecord(username,record):
+  curses.curs_set(1)
+  pop = curses.newwin(5,40,int(size[0]/2-3),int(size[1]/2-20))
+  pop.border(0)
+  title = "Delete %s" % record['plain'][0]
+  prompt = "Are you sure?"
+  popsize = pop.getmaxyx()
+  pop.addstr(0, int(popsize[1]/2 - len(title)/2), title)
+  pop.addstr(popsize[0]-1, int(popsize[1]/2 - len(controlstr)/2),controlstr)
+  pop.addstr(int(popsize[0]/2), int(popsize[1]/2 - len(prompt)/2),prompt)
+
+  ch = pop.getch()
+  if ch == 10:
+    delete_entry(username,record)
+    return True
+
 def textEntry(scr, pos, text = '', mask = None):
   strng = [char for char in text]
   while 1:
@@ -79,7 +95,7 @@ def textEntry(scr, pos, text = '', mask = None):
     elif ch == 27:
       strng = []
       break
-    elif ch == 263 or ch == 127:
+    elif ch == 263 or ch == 127 or ch == 8:
       if len(strng):
         strng.pop()
         scr.addstr(pos[0] ,pos[1]+len(strng) ,' ')
@@ -101,19 +117,19 @@ def printMenu(scr, pos):
 
 def printData(scr, pos, data):
   if len(data) == 1:
-    scr.addstr(pos[0],pos[1],welcomeText,curses.A_BOLD)
+    scr.addstr(2,pos[1],welcomeText,curses.A_BOLD)
   else:
     for i,item in enumerate(data):
       if 'plain' in item.keys():
         y = (pos[0] + i) % (size[0] - 1)
-        x = ((pos[0] + i) / (size[0] - 1)) * col + 1
+        x = int((pos[0] + i) / (size[0] - 1)) * col + 1
         if x > 1:
           y = y + 2
         if i == selected[1]:
           attr = curses.A_REVERSE
         else:
           attr = 0
-        scr.addnstr(y,x,str(item['plain'][0]),col,attr)
+        scr.addnstr(y,x,item['plain'][0],col,attr)
     curses.curs_set(0)
 
 # TODO def quit method
@@ -124,29 +140,38 @@ def main():
   exit = 1
   pos = (1,1)
   data = []
+  username = ''
 
   try:
     stdscr = init()
     while exit:
       if not len(data):
-        username = textEntry(stdscr,printPrompt(stdscr,pos, 0),'jokersadface')
+        username = textEntry(stdscr,printPrompt(stdscr,pos, 0),username)
         if username == None:
           break
-        data = parse_file(username + '.hex')
+        username = username + '.hex'
+        data = parse_file(username)
         salt = data[0]['salt'] if len(data) else None
-        passphrase = textEntry(stdscr,printPrompt(stdscr,(pos[0]+1,pos[1]), 1),'test','*')
+        passphrase = textEntry(stdscr,printPrompt(stdscr,(pos[0]+1,pos[1]), 1),'','*')
         if passphrase == None:
           break
         key_slice = len(passphrase) % 32
+        passphrase = passphrase.encode()
         generated_salt, derived_key = derive_key(passphrase,salt)
         if len(data):
           del data[0]['salt']
-          data[0]['key'] = decrypt(derived_key[key_slice:key_slice+32],passphrase,data[0]['key'])
-          data = data[:1] + unlock_data(data[0]['key'],passphrase,data[1:])
+          key = decrypt(derived_key[key_slice:key_slice+32],data[0]['key'],passphrase)
+          if key:
+            data[0]['key'] = decrypt(derived_key[key_slice:key_slice+32],data[0]['key'],passphrase)
+            data = data[:1] + [unlock_record(data[0]['key'],passphrase,item) for item in data[1:]]
+          else:
+            data = []
+            username = username[:-4]
+            continue
         else:
           key = os.urandom(int(256/8))
           wrapped_key = encrypt(derived_key[key_slice:key_slice+32],key,passphrase)
-          store_entry(username,{"cipher":ba.b2a_hex(generated_salt+wrapped_key),'entry':''})
+          store_entry(username,{"cipher":generated_salt+wrapped_key,'entry':''})
           data = [{'key':key,'salt':generated_salt,'entry':ba.b2a_hex(generated_salt+wrapped_key)}]
 
       stdscr.clear()
@@ -156,14 +181,28 @@ def main():
       ch = stdscr.getch()
 
       if ch == 10:
-        if selected[0] == 0:
-          new = fillRecord()
+        if selected[0] == 0 or selected[0] == 1:
+          # Clean this up later
+          record = data[selected[1]] if selected[0] else None
+          new = fillRecord(record)
           if new:
-            data.append({'plain': new})
-        elif selected[0] == 1:
-          new = fillRecord(data[selected[1]]['plain'])
-          if new:
-            data[selected[1]]['plain'] = new
+            if record:
+              record['plain'] = new
+            else:
+              data.append({'plain': new,'entry': ''})
+            record = record if record else data[-1]
+            record = lock_record(data[0]['key'],passphrase,record)
+            store_entry(username,record)
+            record['entry'] = ba.b2a_hex(record['cipher']).decode()
+            record = unlock_record(data[0]['key'],passphrase,record)
+            if selected[0]:
+              data[selected[1]] = record
+            else:
+              data[-1] = record
+        else:
+          if deleteRecord(username,data[selected[1]]):
+            del data[selected[1]]
+            selected = (selected[0],1)
 
       if ch == 27:
         # pop = curses.newwin(3,40,size[0]/2-1,size[1]/2-20)
@@ -191,7 +230,6 @@ def main():
       elif ch == 261: #RIGHT
         select = selected[0] + 1 if selected[0] + 1 < 2  else 2
         selected = (select,selected[1])
-      # stdscr.getch()
 
   except:
     stdscr.keypad(0)

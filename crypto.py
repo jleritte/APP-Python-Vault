@@ -3,6 +3,7 @@ import os, hashlib
 import binascii as ba
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from ast import literal_eval
 
 BE = default_backend()
 
@@ -12,7 +13,7 @@ def derive_key(passphrase, salt):
 
 	return (salt,ba.b2a_hex(dk))
 
-def encrypt(key,plaintext,passphrase):
+def encrypt(key, plaintext, passphrase = ''):
 	iv = os.urandom(12)
 	encryptor = Cipher(algorithms.AES(key),modes.GCM(iv),BE).encryptor()
 
@@ -23,7 +24,7 @@ def encrypt(key,plaintext,passphrase):
 
 	return iv + encryptor.tag + ciphertext
 
-def decrypt(key, passphrase, cipherblock):
+def decrypt(key, cipherblock, passphrase = ''):
 	iv = cipherblock[:12]
 	ciphertext = cipherblock[28:]
 	tag = cipherblock[12:28]
@@ -38,13 +39,16 @@ def decrypt(key, passphrase, cipherblock):
 	try:
 		plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 	except:
-		plaintext = "Invalid Passphrase"
+		plaintext = None
 
 	return plaintext
 
-def unlock_data(key,passphrase,data):
-	for i,item in enumerate(data):
-		item['plain'] = decrypt(key,passphrase,item['cipher'])
-		del item['cipher']
-		data[i] = item
-	return data
+def unlock_record(key, passphrase, record):
+	record['plain'] = literal_eval(decrypt(key,record['cipher'],passphrase).decode())
+	del record['cipher']
+	return record
+
+def lock_record(key, passphrase, record):
+	record['cipher'] = encrypt(key,str(record['plain']).encode(),passphrase)
+	del record['plain']
+	return record

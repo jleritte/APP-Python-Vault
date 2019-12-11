@@ -9,14 +9,27 @@ def store_entry(name,record):
 		for i,line in enumerate(text):
 			line = line.strip()
 			if line == record["entry"]:
-				line = record["cipher"]
+				line = ba.b2a_hex(record["cipher"]).decode()
 				found = 1
 			text[i] = line
 		if not found:
-			text.append(record["cipher"])
+			text.append(ba.b2a_hex(record["cipher"]).decode())
 
 	with open(name,'w') as f:
 		f.write('\n'.join(text))
+
+def delete_entry(name,record):
+	text = ''
+	with open(name,'r') as f:
+		text = f.readlines()
+		for i,line in enumerate(text):
+			line = line.strip()
+			if line == record["entry"]:
+				del text[i]
+
+	with open(name,'w') as f:
+		f.write(''.join(text))
+
 
 def parse_file(name):
 	content = []
