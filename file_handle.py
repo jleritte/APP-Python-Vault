@@ -1,6 +1,11 @@
 # file read/write functions
 import binascii as ba
 
+def write_to(file,text):
+    file.seek(0,0)
+    file.write('\n'.join(text))
+    file.truncate()
+
 def store_entry(name,record):
   with open(name,'r+') as f:
     text = [line.strip() for line in f.readlines()]
@@ -9,18 +14,14 @@ def store_entry(name,record):
       text[i] = ba.b2a_hex(record['cipher']).decode()
     except ValueError:
       text.append(ba.b2a_hex(record["cipher"]).decode())
-    f.seek(0,0)
-    f.write('\n'.join(text))
-    f.truncate()
+    write_to(f,text)
 
 def delete_entry(name,record):
   with open(name,'r+') as f:
     text = [line.strip() for line in f.readlines()]
     i = text.index(record['entry'])
     del text[i]
-    f.seek(0,0)
-    f.write('\n'.join(text))
-    f.truncate()
+    write_to(f,text)
 
 def parse_file(name):
   content = []
