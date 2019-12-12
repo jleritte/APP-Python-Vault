@@ -1,4 +1,5 @@
 # UI layer
+# encoding=UTF-8
 from crypto import *
 from file_handle import *
 import curses
@@ -12,7 +13,6 @@ menuText = ['New Record','Edit Record','Delete Record']
 selected = (0,1)
 size = None
 col = None
-step = 0
 
 def init():
   global size
@@ -31,9 +31,8 @@ def paintBorder(scr):
   scr.addstr(size[0]-1, int(size[1]/2 - len(quitText)/2), quitText)
 
 def printPrompt(scr, pos, step, prompts = ['Who are you? ','Enter passphrase: ']):
-  prompt = prompts[step]
-  scr.addstr(pos[0],pos[1],prompt,curses.A_BOLD)
-  return (pos[0],pos[1]+len(prompt))
+  scr.addstr(pos[0],pos[1],prompts[step],curses.A_BOLD)
+  return (pos[0],pos[1]+len(prompts[step]))
 
 def fillRecord(old):
   old = old['plain'] if old else ('',)
@@ -89,7 +88,6 @@ def textEntry(scr, pos, text = '', mask = None):
       text = ''.join(strng)
     scr.addstr(pos[0] ,pos[1], text)
     ch = scr.getch()
-    # scr.addstr(1,scr.getmaxyx()[1]-1-len(str(ch)),str(ch),curses.A_STANDOUT)
     if ch == 10:
       break
     elif ch == 27:
@@ -162,7 +160,7 @@ def main():
           del data[0]['salt']
           key = decrypt(derived_key[key_slice:key_slice+32],data[0]['key'],passphrase)
           if key:
-            data[0]['key'] = decrypt(derived_key[key_slice:key_slice+32],data[0]['key'],passphrase)
+            data[0]['key'] = key
             data = data[:1] + [unlock_record(data[0]['key'],passphrase,item) for item in data[1:]]
           else:
             data = []

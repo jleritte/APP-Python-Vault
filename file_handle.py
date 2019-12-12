@@ -2,46 +2,32 @@
 import binascii as ba
 
 def store_entry(name,record):
-	found = 0
-	text = ''
-	with open(name,'r') as f:
-		text = f.readlines()
-		for i,line in enumerate(text):
-			line = line.strip()
-			if line == record["entry"]:
-				line = ba.b2a_hex(record["cipher"]).decode()
-				found = 1
-			text[i] = line
-		if not found:
-			text.append(ba.b2a_hex(record["cipher"]).decode())
-
-	with open(name,'w') as f:
-		f.write('\n'.join(text))
+  with open(name,'r+') as f:
+    text = [line.strip() for line in f.readlines()]
+    try:
+      i = text.index(record['entry'])
+      text[i] = ba.b2a_hex(record['cipher']).decode()
+    except ValueError:
+      text.append(ba.b2a_hex(record["cipher"]).decode())
+    f.seek(0,0)
+    f.write('\n'.join(text))
+    f.truncate()
 
 def delete_entry(name,record):
-	text = ''
-	with open(name,'r') as f:
-		text = f.readlines()
-		for i,line in enumerate(text):
-			line = line.strip()
-			if line == record["entry"]:
-				del text[i]
-
-	with open(name,'w') as f:
-		f.write(''.join(text))
-
+  with open(name,'r+') as f:
+    text = [line.strip() for line in f.readlines()]
+    i = text.index(record['entry'])
+    del text[i]
+    f.seek(0,0)
+    f.write('\n'.join(text))
+    f.truncate()
 
 def parse_file(name):
-	content = []
-	with open(name,'a+') as f:
-		f.seek(0,0)
-		for i,line in enumerate(f.readlines()):
-			temp = {'entry': line.strip()}
-			line = ba.a2b_hex(temp["entry"])
-			if i < 1:
-				temp['salt'] = line[:16]
-				temp['key'] = line[16:]
-			else:
-				temp['cipher'] = line
-			content.append(temp)
-	return content
+  content = []
+  with open(name,'a+') as f:
+    f.seek(0,0)
+    content = [{'entry':line.strip(),'cipher':ba.a2b_hex(line.strip())} for line in f.readlines()]
+    content[0] = {'entry':content[0]['entry'],
+                  'salt':content[0]['cipher'][:16],
+                  'key':content[0]['cipher'][16:]}
+  return content
