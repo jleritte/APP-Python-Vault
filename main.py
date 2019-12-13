@@ -5,7 +5,7 @@ from file_handle import *
 import curses
 import traceback
 
-# '↑↓: Select Record-←→: Select Action-
+addToQuit ='↑↓: Select Record-←→: Select Action-'
 quitText = 'Enter: Confirm-Esc: Exit'
 controlstr =  'Enter: Confirm-Esc: Cancel'
 welcomeText = 'Welcome Please Create a Record'
@@ -134,6 +134,7 @@ def printData(scr, pos, data):
 
 def main():
   global selected
+  global quitText
   # UI Variables
   exit = 1
   pos = (1,1)
@@ -171,6 +172,7 @@ def main():
           wrapped_key = encrypt(derived_key[key_slice:key_slice+32],key,passphrase)
           store_entry(username,{"cipher":generated_salt+wrapped_key,'entry':''})
           data = [{'key':key,'salt':generated_salt,'entry':ba.b2a_hex(generated_salt+wrapped_key)}]
+        quitText = ''.join([addToQuit,quitText])
 
       stdscr.clear()
       paintBorder(stdscr)
