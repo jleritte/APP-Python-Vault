@@ -114,16 +114,17 @@ def printMenu(scr, pos):
     x = x + 2 + len(item)
 
 def printData(scr, pos, data):
+  # TODO: Fix the column split
   if len(data) == 1:
     scr.addstr(2,pos[1],welcomeText,curses.A_BOLD)
   else:
     for i,item in enumerate(data):
       if 'plain' in item.keys():
-        y = (pos[0] + i) % (size[0] - 1)
-        x = int((pos[0] + i) / (size[0] - 1)) * col + 1
-        scr.addstr(y,size[1]-5,str(y,x))
+        y = (i+1) % (size[0] - 2)
+        x = int(i / (size[0] - 1)) * col + 1
         if x > 1:
           y = y + 2
+        scr.addstr(y,size[1]-col,str((y,x,col,i,size[0])))
         if i == selected[1]:
           attr = curses.A_REVERSE
         else:
