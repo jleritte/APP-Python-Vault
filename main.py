@@ -11,8 +11,8 @@ controlstr =  'Enter: Confirm-Esc: Cancel'
 welcomeText = 'Welcome Please Create a Record'
 menuText = ['New Record','Edit Record','Delete Record']
 selected = (0,1)
-size = None
-col = None
+# size = None
+# col = None
 
 def init():
   global size
@@ -22,7 +22,7 @@ def init():
   curses.cbreak()
   stdscr.keypad(1)
   size = stdscr.getmaxyx()
-  col = int(size[1] / 4)
+  col = int(size[1] / 5)
   paintBorder(stdscr)
   return stdscr
 
@@ -121,6 +121,7 @@ def printData(scr, pos, data):
       if 'plain' in item.keys():
         y = (pos[0] + i) % (size[0] - 1)
         x = int((pos[0] + i) / (size[0] - 1)) * col + 1
+        scr.addstr(y,size[1]-5,str(y,x))
         if x > 1:
           y = y + 2
         if i == selected[1]:
@@ -139,7 +140,7 @@ def main():
   exit = 1
   pos = (1,1)
   data = []
-  username = ''
+  username = 'jokersadface'
 
   try:
     stdscr = init()
@@ -151,7 +152,7 @@ def main():
         username = username + '.hex'
         data = parse_file(username)
         salt = data[0]['salt'] if len(data) else None
-        passphrase = textEntry(stdscr,printPrompt(stdscr,(pos[0]+1,pos[1]), 1),'','*')
+        passphrase = textEntry(stdscr,printPrompt(stdscr,(pos[0]+1,pos[1]), 1),'test','*')
         if passphrase == None:
           break
         key_slice = len(passphrase) % 32
