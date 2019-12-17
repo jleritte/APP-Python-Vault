@@ -5,25 +5,29 @@ from ast import literal_eval
 from functools import reduce
 
 score = ''
-today = date.today()
-maxs = {"Daily": float((date(today.year,12,31)-date(today.year,1,1)).days),"Weekly":52.,"Monthly":12.,"Three Months":4.,"Six Months":2.,"Annually":1.}
+today = ''
+days = ''
+cleared = None
+labels = {'1':'Daily','7':'Weekly','30':'Monthly','90':'Three Months','180':'Six Months','360':'Annually'}
 
 def read_file(name = 'chores.json'):
   with open(name) as f:
-    return {key: [literal_eval(str(value)) for value in values] for (key,values) in json.load(f).items()}
+    return [literal_eval(str(value)) for value in json.load(f)]
 
 def write_file(data,name = 'score.json'):
   with open(name,'w') as f:
-    json.dump({key: [str(value) for value in values] for (key,values) in data},f)
+    json.dump([str(value) for value in data],f)
 
-def print_section(chores):
-  for section,tasks in chores.items():
-    print(section)
-    print('******')
-    for task in tasks:
-      if len(task) < 2:
-        print(task[0])
-    print("")
+def print_sections(chores):
+  last = ''
+  for section, task, date in chores:
+    if last != section:
+      last = section
+      print('')
+      print(labels[str(section)])
+      print('******')
+    if not len(date):
+      print(task)
 
 def print_scores(scores):
   for key,value in scores.items():
@@ -33,53 +37,82 @@ def print_scores(scores):
     print('')
 
 def score_task(section,index):
-  task_score = score[section][index]
-  print(section, task_score)
-  return task_score + 1
+  section, scores = score[section]
+  scores[index] = scores[index] + 1
+  return (section,scores)
+
+def get_tasks(chores,section):
+  return [task for task in chores if task[0] == score[section][0]]
 
 def stamp_task(task):
-  return (task[0],date.today().isoformat())
+  section, task, datestr = task
+  return (section, task, today.isoformat())
 
 def clear_task(task):
-  print(task)
-  return (task[0],)
+  section, task, datestr = task
+  print('Clear:',task)
+  return (section, task,'')
 
 def clear_tasks(tasks):
-  tasks["Daily"] = [clear_task(task)  if check(task,today) else task for task in tasks["Daily"]]
-  tasks["Weekly"] = [clear_task(task) if check(task,today - timedelta(days=today.weekday())) else task for task in tasks["Weekly"]]
-  tasks["Monthly"] = [clear_task(task) if check(task,today - timedelta(days=today.day-1)) else task for task in tasks["Monthly"]]
+  return [clear_task(task) if check(task) else task for task in tasks]
 
-def check(task,date_to):
-  return len(task) > 1 and datetime.strptime(task[1],'%Y-%m-%d').date() < date_to
+def check(task):
+  sect, name, date_from = task
+  dif = timedelta(days=0)
+  if sect == 7:
+    dif = timedelta(days=today.weekday())
+  elif sect == 30:
+    dif = timedelta(days=today.day - 1)
+  elif sect == 90:
+    dif = today - date(today.year,today.month-((today.month+2) % 3),1)
+  elif sect == 180:
+    dif = today - date(today.year,today.month-((today.month+5) % 6),1)
+  elif sect == 360:
+    dif = today - date(today.year,1,1)
+  return len(date_from) and datetime.strptime(task[2],'%Y-%m-%d').date() < today - dif
+
+def clear_score():
+  global cleared
+  if today == date(today.year,1,1) and not cleared:
+    cleared = True
+  elif today != date(today.year,1,1):
+    cleared = None
 
 def total_score():
   precents = {'Total':0}
-  for section,tasks in score.items():
-    precents[section] = [task/maxs[section] for task in tasks]
-    precents[section+'total'] = reduce((lambda x, y: x + y),precents[section]) / len(precents[section])
-    precents['Total'] = precents['Total'] + precents[section+'total']
+  for section,tasks in score:
+    label = labels[str(section)]
+    precents[label] = [float(task/int(days/section)) for task in tasks]
+    precents[label+'total'] = reduce((lambda x, y: x + y),precents[label]) / len(precents[label])
+    precents['Total'] = precents['Total'] + precents[label+'total']
   precents['Total'] = precents['Total'] / len(score)
   return precents
 
-
-
+def init_connection():
+  global score
+  global today
+  global days
+  today = date.today()
+  days = (date(today.year,12,31) - date(today.year,1,1)).days + 1
+  score = read_file('score.json')
 
 def main():
-  global score
-  chores = read_file()
-  score = read_file('score.json')
-  clear_tasks(chores)
+  print(today,days,score)
+  init_connection()
+  print(today,days,score)
+  chores = clear_tasks(read_file())
+  clear_score()
   # print('***********************************')
-  # print(print_scores(total_score()))
+  # print_scores(total_score())
   # print('***********************************')
-  print_section(chores)
-  check = raw_input('Check: ')
-  if len(check):
-    section, index = literal_eval(check)
-    score[section][index] = score_task(section, index)
-    chores[section][index] = str(stamp_task(chores[section][index]))
-    write_file(score)
-    write_file(chores,'chores.json')
+  # print_sections(chores)
+  # if len(ch):
+  #   section, index = literal_eval(ch)
+  #   score[section] = score_task(section, index)
+  #   task = get_tasks(chores,section)[index]
+  #   chores[chores.index(task)] = stamp_task(task)
+  # write_file(score)
+  # write_file(chores,'chores.json')
 
 
 
