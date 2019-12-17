@@ -1,17 +1,17 @@
 {
   "Daily": [
-    "('Make your bed',)",
-    "('Wipe down bathroom counters after getting washed up morning and night',)",
+    "('Make your bed','2019-12-16')",
+    "('Wipe down bathroom counters after getting washed up morning and night','2019-12-15')",
     "('Empty/load dishwasher',)",
     "('Take out trash',)",
     "('Do a nighttime sweep to put toys, loose papers, and other stray objects in their place',)",
     "('Wipe down counters, table, and sink',)"
   ],
   "Weekly":[
-    "('Dust all hard surfaces',)",
-    "('Vacuum and/or mop floors',)",
-    "('Wipe down appliances',)",
-    "('Wipe down and disinfect counter tops',)",
+    "('Dust all hard surfaces','2019-12-15')",
+    "('Vacuum and/or mop floors','2019-12-11')",
+    "('Wipe down appliances','2019-12-17')",
+    "('Wipe down and disinfect counter tops','2019-12-16')",
     "('Wipe down mirrors',)",
     "('Scrub and disinfect the kitchen sink',)",
     "('Scrub and disinfect toilets',)",
@@ -20,10 +20,10 @@
     "('Toss any food that has expired',)"
     ],
   "Monthly": [
-    "('Vacuum upholstery',)",
-    "('Wipe out and disinfect wastebaskets',)",
-    "('Wipe down and disinfect doorknobs, light switches and TV remotes',)",
-    "('Dust ceiling fans and vents',)",
+    "('Vacuum upholstery','2019-11-30')",
+    "('Wipe out and disinfect wastebaskets','2019-12-1')",
+    "('Wipe down and disinfect doorknobs, light switches and TV remotes','2019-12-8')",
+    "('Dust ceiling fans and vents','2019-12-16')",
     "('Dust moldings',)",
     "('Scrub stove top, including burner grates',)",
     "('Wipe down kitchen cabinets',)",

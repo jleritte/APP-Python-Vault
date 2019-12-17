@@ -1,55 +1,85 @@
 # Chores Checklist
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from ast import literal_eval
+from functools import reduce
 
 score = ''
+today = date.today()
+maxs = {"Daily": float((date(today.year,12,31)-date(today.year,1,1)).days),"Weekly":52.,"Monthly":12.,"Three Months":4.,"Six Months":2.,"Annually":1.}
 
 def read_file(name = 'chores.json'):
   with open(name) as f:
-    return json.load(f)
+    return {key: [literal_eval(str(value)) for value in values] for (key,values) in json.load(f).items()}
 
 def write_file(data,name = 'score.json'):
   with open(name,'w') as f:
-    json.dump(data,f)
+    json.dump({key: [str(value) for value in values] for (key,values) in data},f)
 
-def print_section(chores,section = 'Daily'):
-  print(section)
-  tasks = [literal_eval(task) for task in chores[section]]
-  for task in tasks:
-    print(task[0])
-    score_task(task)
+def print_section(chores):
+  for section,tasks in chores.items():
+    print(section)
+    print('******')
+    for task in tasks:
+      if len(task) < 2:
+        print(task[0])
+    print("")
 
-def score_task(task):
+def print_scores(scores):
+  for key,value in scores.items():
+    print(key)
+    print('----')
+    print(value)
+    print('')
+
+def score_task(section,index):
+  task_score = score[section][index]
+  print(section, task_score)
+  return task_score + 1
+
+def stamp_task(task):
+  return (task[0],date.today().isoformat())
+
+def clear_task(task):
+  print(task)
+  return (task[0],)
+
+def clear_tasks(tasks):
+  tasks["Daily"] = [clear_task(task)  if check(task,today) else task for task in tasks["Daily"]]
+  tasks["Weekly"] = [clear_task(task) if check(task,today - timedelta(days=today.weekday())) else task for task in tasks["Weekly"]]
+  tasks["Monthly"] = [clear_task(task) if check(task,today - timedelta(days=today.day-1)) else task for task in tasks["Monthly"]]
+
+def check(task,date_to):
+  return len(task) > 1 and datetime.strptime(task[1],'%Y-%m-%d').date() < date_to
+
+def total_score():
+  precents = {'Total':0}
+  for section,tasks in score.items():
+    precents[section] = [task/maxs[section] for task in tasks]
+    precents[section+'total'] = reduce((lambda x, y: x + y),precents[section]) / len(precents[section])
+    precents['Total'] = precents['Total'] + precents[section+'total']
+  precents['Total'] = precents['Total'] / len(score)
+  return precents
+
+
 
 
 def main():
   global score
   chores = read_file()
   score = read_file('score.json')
-  today = date.today()
-  startofyear = date(today.year,1,1)
-  days = (today - startofyear).days
-  print('***********************************')
-  print(days)
-  print(score)
-  print('***********************************')
-  ly,lm,ld = literal_eval(score['Last'])
-  last = date(ly,lm,ld)
-  # today = last
+  clear_tasks(chores)
+  # print('***********************************')
+  # print(print_scores(total_score()))
+  # print('***********************************')
   print_section(chores)
-  if today.isoweekday() is 1:
-    print_section(chores,'Weekly')
-  if today.day is 1:
-    print_section(chores,'Monthly')
-    if today.month is 1 or today.month is 4 or today.month is 7 or today.month is 10:
-      print_section(chores,"Three Months")
-    if today.month is 1 or today.month is 7:
-      print_section(chores,"Six Months")
-    if today.month is 1:
-      print_section(chores,"Annually")
-  score['check'] = input('Check: ')
-  write_file(score)
+  check = raw_input('Check: ')
+  if len(check):
+    section, index = literal_eval(check)
+    score[section][index] = score_task(section, index)
+    chores[section][index] = str(stamp_task(chores[section][index]))
+    write_file(score)
+    write_file(chores,'chores.json')
 
 
 
