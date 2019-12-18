@@ -2,7 +2,9 @@
 import json
 from datetime import datetime, date, timedelta
 from ast import literal_eval
+from itertools import groupby
 from functools import reduce
+from socket import *
 
 score = ''
 today = ''
@@ -12,22 +14,22 @@ labels = {'1':'Daily','7':'Weekly','30':'Monthly','90':'Three Months','180':'Six
 
 def read_file(name = 'chores.json'):
   with open(name) as f:
-    return [literal_eval(str(value)) for value in json.load(f)]
+    data = [literal_eval(value) for value in json.load(f)]
+    data.sort(key=sort_on)
+    return data
 
 def write_file(data,name = 'score.json'):
   with open(name,'w') as f:
-    json.dump([str(value) for value in data],f)
+    json.dump([str(value) for value in data],f,indent=2)
 
 def print_sections(chores):
-  last = ''
-  for section, task, date in chores:
-    if last != section:
-      last = section
-      print('')
-      print(labels[str(section)])
-      print('******')
-    if not len(date):
-      print(task)
+  for section, tasks in groupby(chores,key=sort_on):
+    print(labels[str(section)])
+    print('******')
+    for i,task,complete in tasks:
+      if not len(complete):
+        print(task)
+    print('')
 
 def print_scores(scores):
   for key,value in scores.items():
@@ -50,7 +52,6 @@ def stamp_task(task):
 
 def clear_task(task):
   section, task, datestr = task
-  print('Clear:',task)
   return (section, task,'')
 
 def clear_tasks(tasks):
@@ -71,22 +72,24 @@ def check(task):
     dif = today - date(today.year,1,1)
   return len(date_from) and datetime.strptime(task[2],'%Y-%m-%d').date() < today - dif
 
-def clear_score():
+def clear_score(chores):
   global cleared
+  global score
   if today == date(today.year,1,1) and not cleared:
+    score = [(section,0) for section,x,y in chores]
     cleared = True
   elif today != date(today.year,1,1):
     cleared = None
 
 def total_score():
-  precents = {'Total':0}
-  for section,tasks in score:
+  percents = {'Total':0}
+  for section, tasks in groupby(score,key=sort_on):
     label = labels[str(section)]
-    precents[label] = [float(task/int(days/section)) for task in tasks]
-    precents[label+'total'] = reduce((lambda x, y: x + y),precents[label]) / len(precents[label])
-    precents['Total'] = precents['Total'] + precents[label+'total']
-  precents['Total'] = precents['Total'] / len(score)
-  return precents
+    percents[label] = [float(task/int(days/section)) for i,task in tasks]
+    percents[label+' total'] = reduce(lambda a,b: a+b,percents[label]) / len(percents[label])
+    percents['Total'] = percents['Total'] + percents[label+' total']
+  percents['Total'] = percents['Total'] / len(score)
+  return percents
 
 def init_connection():
   global score
@@ -96,12 +99,31 @@ def init_connection():
   days = (date(today.year,12,31) - date(today.year,1,1)).days + 1
   score = read_file('score.json')
 
+def sort_on(x):
+  return x[0]
+
 def main():
-  print(today,days,score)
-  init_connection()
-  print(today,days,score)
-  chores = clear_tasks(read_file())
-  clear_score()
+  sock = socket(AF_INET,SOCK_STREAM)
+  sock.bind(('localhost',9001))
+  sock.listen(5)
+  print('listening on: ','localhost',9001)
+  while True:
+    connect, addrss = sock.accept()
+    try:
+        print('connected: ',addrss)
+        while True:
+          data = connect.recv(200)
+          if data:
+            print(data)
+            connect.sendall(data)
+          else:
+            break
+    finally:
+      print('connection closed')
+      connect.close()
+  # init_connection()
+  # chores = clear_tasks(read_file())
+  # clear_score(chores)
   # print('***********************************')
   # print_scores(total_score())
   # print('***********************************')

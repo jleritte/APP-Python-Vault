@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Python Client Test</title>
+</head>
+<body>
+	<script>
+		test = new WebSocket('ws://127.0.0.1:9001')
+		test.onopen = e => {
+			document.writeln('Connected')
+			test.send('Hello')
+		}
+
+		test.onmessage = e => {
+			document.writeln(e.data)
+		}
+
+		test.onclose = e => {
+			if(e.wasClean) {
+				document.writeln(`Connection closed - code:${e.code}  reason:${e.reason}`)
+			} else {
+				document.writeln('Connection Died')
+			}
+		}
+
+		test.onerror = e => {
+			document.writeln(`Error: ${e.message}`)
+		}
+		printStatus = e => {
+			if (test.readyState !== 3) {
+				document.writeln(test.readyState)
+			}
+		}
+		setInterval(printStatus, 250)
+	</script>
+</body>
+</html>
