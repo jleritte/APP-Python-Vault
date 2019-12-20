@@ -118,7 +118,7 @@ def printData(scr, pos, data):
   if len(data) == 1:
     scr.addstr(2,pos[1],welcomeText,curses.A_BOLD)
   else:
-    for i,item in enumerate(data):
+    for i,item in enumerate(data[1:]):
       if 'plain' in item.keys():
         y = (i+1) % (size[0] - 2)
         x = int(i / (size[0] - 1)) * col + 1
@@ -164,7 +164,7 @@ def main():
           key = decrypt(derived_key[key_slice:key_slice+32],data[0]['key'],passphrase)
           if key:
             data[0]['key'] = key
-            data = data[:1] + [unlock_record(data[0]['key'],passphrase,item) for item in data[1:]]
+            data = data[0] + [unlock_record(data[0]['key'],passphrase,item) for item in data[1:]]
           else:
             data = []
             username = username[:-4]
