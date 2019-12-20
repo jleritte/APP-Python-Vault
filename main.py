@@ -164,7 +164,7 @@ def main():
           key = decrypt(derived_key[key_slice:key_slice+32],data[0]['key'],passphrase)
           if key:
             data[0]['key'] = key
-            data = data[0] + [unlock_record(data[0]['key'],passphrase,item) for item in data[1:]]
+            data = data[:1] + [unlock_record(data[0]['key'],passphrase,item) for item in data[1:]]
           else:
             data = []
             username = username[:-4]
