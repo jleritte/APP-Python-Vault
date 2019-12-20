@@ -1,10 +1,12 @@
 # Chores Checklist
+import sys
 import json
+import asyncio
+import websockets
 from datetime import datetime, date, timedelta
 from ast import literal_eval
 from itertools import groupby
 from functools import reduce
-from socket import *
 
 score = ''
 today = ''
@@ -38,13 +40,9 @@ def print_scores(scores):
     print(value)
     print('')
 
-def score_task(section,index):
-  section, scores = score[section]
-  scores[index] = scores[index] + 1
-  return (section,scores)
-
-def get_tasks(chores,section):
-  return [task for task in chores if task[0] == score[section][0]]
+def score_task(index):
+  section, value = score[index]
+  return (section,value + 1)
 
 def stamp_task(task):
   section, task, datestr = task
@@ -98,44 +96,57 @@ def init_connection():
   today = date.today()
   days = (date(today.year,12,31) - date(today.year,1,1)).days + 1
   score = read_file('score.json')
+  chores = clear_tasks(read_file())
+  clear_score(chores)
+
+  return chores
 
 def sort_on(x):
   return x[0]
 
+def sort_on_zip(x):
+  return x[0][0]
+
+def save_data(chores):
+  write_file(score)
+  write_file(chores,'chores.json')
+
+def wrap_message(chores):
+  return json.dumps({"chores":chores,"score":score})
+
+def log(mssg,out=False):
+  caret = ">>" if out else "<"
+  message = f"{caret} {mssg} @{datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}"
+  print(message)
+
+async def message_handle(websocket, path):
+  global score
+  chores = init_connection()
+  try:
+    async for message in websocket:
+      action,task = json.loads(message).values()
+      log(f"{action} {task}")
+
+      if action == 'check':
+        chores[task] = stamp_task(chores[task])
+        log(f"Chore {chores[task][1]} Checked Off",True)
+        score[task] = score_task(task)
+        save_data(chores=chores)
+        log(f"Updated Files",True)
+
+      response = wrap_message(chores)
+      await websocket.send(response)
+      log(f"Updated Client",True)
+
+  except websockets.exceptions.ConnectionClosedError:
+    log(f"!Error {sys.exc_info()[1]}",True)
+  finally:
+    log(f"Closed",True)
+
 def main():
-  sock = socket(AF_INET,SOCK_STREAM)
-  sock.bind(('localhost',9001))
-  sock.listen(5)
-  print('listening on: ','localhost',9001)
-  while True:
-    connect, addrss = sock.accept()
-    try:
-        print('connected: ',addrss)
-        while True:
-          data = connect.recv(200)
-          if data:
-            print(data)
-            connect.sendall(data)
-          else:
-            break
-    finally:
-      print('connection closed')
-      connect.close()
-  # init_connection()
-  # chores = clear_tasks(read_file())
-  # clear_score(chores)
-  # print('***********************************')
-  # print_scores(total_score())
-  # print('***********************************')
-  # print_sections(chores)
-  # if len(ch):
-  #   section, index = literal_eval(ch)
-  #   score[section] = score_task(section, index)
-  #   task = get_tasks(chores,section)[index]
-  #   chores[chores.index(task)] = stamp_task(task)
-  # write_file(score)
-  # write_file(chores,'chores.json')
+  start_server = websockets.serve(message_handle, "localhost", 9001)
 
-
+  asyncio.get_event_loop().run_until_complete(start_server)
+  asyncio.get_event_loop().run_forever()
 
 main()

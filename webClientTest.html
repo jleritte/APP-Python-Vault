@@ -3,36 +3,81 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Python Client Test</title>
+	<style>
+		.checked{
+			opacity: 0.5;
+		}
+	</style>
 </head>
 <body>
+	<div class="chores"></div>
 	<script>
-		test = new WebSocket('ws://127.0.0.1:9001')
-		test.onopen = e => {
-			document.writeln('Connected')
-			test.send('Hello')
+		let data,
+				ws = connectWS(),
+				container = document.querySelector(".chores")
+
+		function connectWS() {
+			let ws = new WebSocket('ws://127.0.0.1:9001')
+			ws.onopen = e => {
+				console.log('Connected')
+				messageWS(ws)
+			}
+
+			ws.onmessage = e => {
+				data = groupBy(JSON.parse(e.data))
+				update()
+			}
+
+			ws.onclose = e => {
+				if(e.wasClean) {
+					console.log(`Connection closed - code:${e.code}  reason:${e.reason}`)
+				} else {
+					console.log('Connection Died')
+				}
+			}
+
+			ws.onerror = e => {
+				console.log(`Error: ${e.message}`)
+			}
+			return ws
 		}
 
-		test.onmessage = e => {
-			document.writeln(e.data)
+		function messageWS(ws,m='list',t='') {ws.send(JSON.stringify({'action':m,'task':t}))}
+
+		function closeWS(ws) {ws.close(1000,"End Communication")}
+
+		function groupBy({chores,score}){
+			let data = {}
+			for(let i in chores){
+				let item = [...chores[i],score[i][1],`${score[i][0]}${i}`], key = item[0]
+				if(key in data){
+					data[key].push(item)
+				} else {
+					data[key] = [item]
+				}
+			}
+			return data
 		}
 
-		test.onclose = e => {
-			if(e.wasClean) {
-				document.writeln(`Connection closed - code:${e.code}  reason:${e.reason}`)
-			} else {
-				document.writeln('Connection Died')
+		const labels = {'1':'Daily','7':'Weekly','30':'Monthly','90':'Three Months','180':'Six Months','360':'Annually'}
+
+		function update() {
+			for(let [section,chores] of Object.entries(data)) {
+				let div = document.createElement('div'),tab = document.createElement('div')
+				tab.innerText = labels[section]
+				div.appendChild(tab)
+
+				for(let chore of chores){
+					let sub = document.createElement(`div`)
+					sub.innerText = `${chore[1]}`
+					if(chore[2]) {
+						sub.classList.add('checked')
+					}
+					div.appendChild(sub)
+				}
+				container.appendChild(div)
 			}
 		}
-
-		test.onerror = e => {
-			document.writeln(`Error: ${e.message}`)
-		}
-		printStatus = e => {
-			if (test.readyState !== 3) {
-				document.writeln(test.readyState)
-			}
-		}
-		setInterval(printStatus, 250)
 	</script>
 </body>
 </html>
