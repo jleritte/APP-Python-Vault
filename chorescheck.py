@@ -74,6 +74,7 @@ def clear_score(chores):
   global cleared
   global score
   if today == date(today.year,1,1) and not cleared:
+    log('Scores Cleared',True)
     score = [(section,0) for section,x,y in chores]
     cleared = True
   elif today != date(today.year,1,1):

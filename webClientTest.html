@@ -4,8 +4,24 @@
 	<meta charset="UTF-8">
 	<title>Python Client Test</title>
 	<style>
-		.chores{
+		.chores {
+			display: grid;
+			grid-template-columns: repeat(6,1fr);
+			grid-template-rows: 20px 1fr;
+		}
+		.chores > div {
+			grid-row: 2;
+		}
+		div.total {
+			grid-row: 1;
+			grid-column: span 6;
 			display: flex;
+		}
+		.tab > div {
+			display: flex;
+		}
+		.tab .label{
+			background: #eee;
 		}
 		.checked{
 			opacity: 0.5;
@@ -24,6 +40,8 @@
 			position: absolute;
 			background: green;
 			height: 100%;
+			width: 0;
+			transition: width 1s linear;
 		}
 
 		.score1:before {width: 1%;}
@@ -168,7 +186,7 @@
 		function groupBy({chores,score}){
 			let data = {}
 			for(let i in chores){
-				let item = [...chores[i],score[i][1]/Math.floor(365/score[i][0]),`${score[i][0]}${i}`], key = item[0]
+				let item = [...chores[i],score[i][1]/Math.floor(365/score[i][0]),`${i}`], key = item[0]
 				if(key in data){
 					data[key].push(item)
 				} else {
@@ -182,23 +200,32 @@
 
 		function update() {
 			let tabs = [], total = document.createElement('div'), totscore = document.createElement('div')
+			while(container.firstElementChild) {
+				container.removeChild(container.firstElementChild)
+			}
 			container.appendChild(total)
 			total.innerText = 'Total'
+			total.className = 'total'
 			for(let [section,chores] of Object.entries(data)) {
 				let div = document.createElement('div'),tab = document.createElement('div'), tscore = document.createElement('div')
 				tabscore = chores.reduce((acc,cur) => acc + cur[3],0)/chores.length
 				tabs.push(tabscore)
 				tscore.classList.add(`score${tabscore*100|0}`)
 				tab.innerText = labels[section]
+				tab.classList.add('label')
+				div.classList.add('tab')
 				tab.appendChild(tscore)
 				div.appendChild(tab)
 				for(let chore of chores){
 					let sub = document.createElement(`div`),score = document.createElement('div')
 					sub.innerText = `${chore[1]}`
 					score.classList.add(`score${chore[3]*100|0}`)
+					sub.title = chore[4]
 					sub.appendChild(score)
 					if(chore[2]) {
 						sub.classList.add('checked')
+					} else {
+						sub.onclick = click_handle
 					}
 					div.appendChild(sub)
 				}
@@ -207,6 +234,11 @@
 			totalscore = tabs.reduce((acc,cur) => acc + cur,0)/tabs.length
 			totscore.classList.add(`score${totalscore*100|0}`)
 			total.appendChild(totscore)
+		}
+
+		function click_handle(e) {
+			console.log(e.target.title)
+			messageWS(ws,'check',+e.target.title)
 		}
 	</script>
 </body>

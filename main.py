@@ -1,5 +1,4 @@
 # UI layer
-# encoding=UTF-8
 from crypto import *
 from file_handle import *
 import curses
@@ -120,10 +119,9 @@ def printData(scr, pos, data):
   else:
     for i,item in enumerate(data[1:]):
       if 'plain' in item.keys():
-        y = (i+1) % (size[0] - 2)
-        x = int(i / (size[0] - 1)) * col + 1
-        if x > 1:
-          y = y + 2
+        y = (i) % (size[0] - 3)
+        x = int(i / (size[0] - 3)) * col + 1
+        y += 2
         scr.addstr(y,size[1]-col,str((y,x,col,i,size[0])))
         if i == selected[1]:
           attr = curses.A_REVERSE
