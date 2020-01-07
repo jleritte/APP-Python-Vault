@@ -28,7 +28,8 @@ def parse_file(name):
   with open(name,'a+') as f:
     f.seek(0,0)
     content = [{'entry':line.strip(),'cipher':ba.a2b_hex(line.strip())} for line in f.readlines()]
-    content[0] = {'entry':content[0]['entry'],
-                  'salt':content[0]['cipher'][:16],
-                  'key':content[0]['cipher'][16:]}
+    if len(content):
+      content[0] = {'entry':content[0]['entry'],
+                    'salt':content[0]['cipher'][:16],
+                    'key':content[0]['cipher'][16:]}
   return content
