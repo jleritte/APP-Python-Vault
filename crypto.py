@@ -18,12 +18,12 @@ def encrypt(key, plaintext, passphrase = ''):
   if passphrase:
     encryptor.authenticate_additional_data(passphrase)
   ciphertext = encryptor.update(plaintext) + encryptor.finalize()
-  return iv + encryptor.tag + ciphertext
+  return iv + ciphertext + encryptor.tag
 
 def decrypt(key, cipherblock, passphrase = ''):
   iv = cipherblock[:12]
-  ciphertext = cipherblock[28:]
-  tag = cipherblock[12:28]
+  ciphertext = cipherblock[12:]
+  tag = cipherblock[:-16]
   decryptor = Cipher(algorithms.AES(key),modes.GCM(iv,tag),BE).decryptor()
   if passphrase:
     decryptor.authenticate_additional_data(passphrase)

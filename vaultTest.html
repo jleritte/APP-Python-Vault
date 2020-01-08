@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	<input type="file">
+	<script>
+		function openFile(e) {
+			console.log("File Selected")
+			let file = this.files[0]
+			if(file){
+				let read = new FileReader()
+				read.onload = e => {
+					console.log(e.target.result)
+				}
+				read.readAsText(file, "UTF-8")
+			}
+		}
+		document.querySelector('input').addEventListener('change', openFile)
+	</script>
+</body>
+</html>
