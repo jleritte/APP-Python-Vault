@@ -23,7 +23,7 @@ def encrypt(key, plaintext, passphrase = ''):
 def decrypt(key, cipherblock, passphrase = ''):
   iv = cipherblock[:12]
   ciphertext = cipherblock[12:]
-  tag = cipherblock[:-16]
+  tag = cipherblock[-16:]
   decryptor = Cipher(algorithms.AES(key),modes.GCM(iv,tag),BE).decryptor()
   if passphrase:
     decryptor.authenticate_additional_data(passphrase)

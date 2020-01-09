@@ -23,6 +23,11 @@
 				password = 'test',
 				iterations = 100000,
 				hexKey = '34383231653338306339616235636366643230613263343031373166353365636265313932386164653062383461333661653233333733663937633239336338'
+		const fromHexString = hexString =>
+  new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+
+const toHexString = bytes =>
+  bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
 	</script>
 </body>
 </html>
