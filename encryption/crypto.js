@@ -18,6 +18,11 @@ export default class CRYPTO {
 		const cipherblock = [...iv,...new Uint8Array(ciphertext)]
 		return toHexString(cipherblock)
 	}
+
+	async decrypt(data,key = dataKey, add = passPhrase) {
+		data = fromHexString(data)
+		let plain
+	}
 }
 
 function encode(string = "") {
