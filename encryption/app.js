@@ -19,7 +19,32 @@ function openFile(e) {
 }
 document.querySelector('input').addEventListener('change', openFile)
 
+function connectWS() {
+	let ws = new WebSocket('ws://127.0.0.1:9001')
+	ws.onopen = e => {
+		console.log('Connected')
+		messageWS(ws)
+	}
 
+	ws.onmessage = e => {
+		data = e.data
+		console.log(data)
+		// update()
+	}
+
+	ws.onclose = e => {
+		if(e.wasClean) {
+			console.log(`Connection closed - code:${e.code}  reason:${e.reason}`)
+		} else {
+			console.log('Connection Died')
+		}
+	}
+
+	ws.onerror = e => {
+		console.log(`Error: ${e.message}`)
+	}
+	return ws
+}
 
 async function unlockKey() {
 	let keySeed = await crypto.subtle.importKey('raw', password, {name: 'PBKDF2'}, false,
