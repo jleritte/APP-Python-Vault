@@ -10,7 +10,7 @@ BE = default_backend()
 def derive_key(passphrase, salt):
   salt = salt if salt != None else os.urandom(16)
   dk = hashlib.pbkdf2_hmac("sha256",passphrase,salt,100000)
-  return (salt,ba.b2a_hex(dk))
+  return (salt,dk)
 
 def encrypt(key, plaintext, passphrase = ''):
   iv = os.urandom(12)
@@ -22,7 +22,7 @@ def encrypt(key, plaintext, passphrase = ''):
 
 def decrypt(key, cipherblock, passphrase = ''):
   iv = cipherblock[:12]
-  ciphertext = cipherblock[12:]
+  ciphertext = cipherblock[12:-16]
   tag = cipherblock[-16:]
   decryptor = Cipher(algorithms.AES(key),modes.GCM(iv,tag),BE).decryptor()
   if passphrase:

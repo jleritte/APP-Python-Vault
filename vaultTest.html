@@ -13,21 +13,46 @@
 			if(file){
 				let read = new FileReader()
 				read.onload = e => {
-					console.log(e.target.result)
+					data = e.target.result.split(/\r?\n/).map(entry => ({entry,cipher: fromHexString(entry)}))
+					salt = data[0].cipher.slice(0,16)
+					data[0] = {entry:data[0].entry,key: data[0].cipher.slice(16)}
+					unlockKey()
 				}
 				read.readAsText(file, "UTF-8")
 			}
 		}
 		document.querySelector('input').addEventListener('change', openFile)
-		let salt = '6357ee337e0c174d5ef3d195816dfb2a',
-				password = 'test',
-				iterations = 100000,
-				hexKey = '34383231653338306339616235636366643230613263343031373166353365636265313932386164653062383461333661653233333733663937633239336338'
-		const fromHexString = hexString =>
-  new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+		let data, salt,
+				password = new TextEncoder().encode('test'),
+				iterations = 100000
 
-const toHexString = bytes =>
-  bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
+		async function unlockKey() {
+			let keySeed = await crypto.subtle.importKey('raw', password, {name: 'PBKDF2'}, false,
+						['deriveKey']),
+					passKey = await crypto.subtle.deriveKey({name: 'PBKDF2', salt, iterations, hash: 'SHA-256'},
+						keySeed, {name: 'AES-GCM',length: 256}, true, ['encrypt','decrypt']),
+					rawKey = await crypto.subtle.decrypt({name: "AES-GCM", iv: data[0].key.slice(0,12),
+						additionalData: password}, passKey, data[0].key.slice(12)),
+					key = await crypto.subtle.importKey('raw', new Uint8Array(rawKey),
+						{name: 'AES-GCM',length: 256}, false, ['encrypt','decrypt'])
+			unlockRecords(key,data.slice(1))
+		}
+
+		async function unlockRecords(key,records) {
+			console.log('Records')
+			for(let record of records) {
+				let plain = new TextDecoder().decode(await crypto.subtle.decrypt(
+							{name: "AES-GCM", iv: record.cipher.slice(0,12), additionalData: password},
+							key, record.cipher.slice(12)))
+				console.log(plain)
+			}
+		}
+
+		const fromHexString = hexString =>
+			new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+
+		const toHexString = bytes =>
+			bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
 	</script>
 </body>
 </html>

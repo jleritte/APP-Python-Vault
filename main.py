@@ -9,7 +9,7 @@ quitText = 'Enter: Confirm-Esc: Exit'
 controlstr =  'Enter: Confirm-Esc: Cancel'
 welcomeText = 'Welcome Please Create a Record'
 menuText = ['New Record','Edit Record','Delete Record']
-selected = (0,1)
+selected = (0,0)
 # size = None
 # col = None
 
@@ -154,12 +154,11 @@ def main():
         passphrase = textEntry(stdscr,printPrompt(stdscr,(pos[0]+1,pos[1]), 1),'test','*')
         if passphrase == None:
           break
-        key_slice = len(passphrase) % 32
         passphrase = passphrase.encode()
         generated_salt, derived_key = derive_key(passphrase,salt)
         if len(data):
           del data[0]['salt']
-          key = decrypt(derived_key[key_slice:key_slice+32],data[0]['key'],passphrase)
+          key = decrypt(derived_key,data[0]['key'],passphrase)
           if key:
             data[0]['key'] = key
             data = data[:1] + [unlock_record(data[0]['key'],passphrase,item) for item in data[1:]]
@@ -169,7 +168,7 @@ def main():
             continue
         else:
           key = os.urandom(int(256/8))
-          wrapped_key = encrypt(derived_key[key_slice:key_slice+32],key,passphrase)
+          wrapped_key = encrypt(derived_key,key,passphrase)
           store_entry(username,{"cipher":generated_salt+wrapped_key,'entry':''})
           data = [{'key':key,'salt':generated_salt,'entry':ba.b2a_hex(generated_salt+wrapped_key)}]
         quitText = ''.join([addToQuit,quitText])
