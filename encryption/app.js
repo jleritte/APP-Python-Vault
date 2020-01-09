@@ -1,4 +1,5 @@
 let data, salt,
+		ws = connectWS(),
 		password = new TextEncoder().encode('test'),
 		iterations = 100000
 
