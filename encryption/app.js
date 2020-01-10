@@ -21,7 +21,7 @@ function openFile(e) {
 document.querySelector('input').addEventListener('change', openFile)
 
 function connectWS() {
-	let ws = new WebSocket('ws://127.0.0.1:9001')
+	let ws = new WebSocket('ws://127.0.0.1:9002')
 	ws.onopen = e => {
 		console.log('Connected')
 		messageWS(ws)

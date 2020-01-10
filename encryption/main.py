@@ -218,10 +218,10 @@ def main():
         # continue
 
       if ch == 258: #DOWN
-        select = selected[1] + 1 if selected[1] + 1 < len(data)  else len(data) - 1
+        select = selected[1] + 1 if selected[1] + 1 < len(data) - 1 else len(data) - 2
         selected = (selected[0],select)
       elif ch == 259: #UP
-        select = selected[1] - 1 if selected[1] - 1 > 1  else 1
+        select = selected[1] - 1 if selected[1] - 1 > -1  else 0
         selected = (selected[0],select)
       elif ch == 260: #LEFT
         select = selected[0] - 1 if selected[0] - 1 > 0  else 0
