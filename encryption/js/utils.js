@@ -1,3 +1,4 @@
+// Utility functions
 export function encode(string = "") {
 	return new TextEncoder().encode(string)
 }

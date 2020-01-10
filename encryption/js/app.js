@@ -1,3 +1,4 @@
+import $$ from './dom.js'
 import CRYPTO from './crypto.js'
 import {decode} from './utils.js'
 

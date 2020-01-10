@@ -1,3 +1,4 @@
+//Crypto Object to make usage of WebCrypto less verbose
 import {encode,decode,toHexString,fromHexString} from './utils.js'
 
 const c = crypto,
