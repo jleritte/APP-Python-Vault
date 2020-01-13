@@ -3,6 +3,9 @@ from crypto import *
 from file_handle import *
 import curses
 import traceback
+import sys
+import asyncio
+import websockets
 
 addToQuit ='↑↓: Select Record-←→: Select Action-'
 quitText = 'Enter: Confirm-Esc: Exit'
@@ -132,7 +135,8 @@ def printData(scr, pos, data):
 
 # TODO def quit method
 
-def main():
+# TODO clean up the UI and break it out into a separate file
+def ui():
   global selected
   global quitText
   # UI Variables
@@ -182,7 +186,7 @@ def main():
       if ch == 10:
         if selected[0] == 0 or selected[0] == 1:
           # Clean this up later
-          record = data[selected[1]] if selected[0] else None
+          record = data[selected[1]+1] if selected[0] else None
           new = fillRecord(record)
           if new:
             if record:
@@ -195,12 +199,12 @@ def main():
             record['entry'] = ba.b2a_hex(record['cipher']).decode()
             record = unlock_record(data[0]['key'],passphrase,record)
             if selected[0]:
-              data[selected[1]] = record
+              data[selected[1]+1] = record
             else:
               data[-1] = record
         else:
-          if deleteRecord(username,data[selected[1]]):
-            del data[selected[1]]
+          if deleteRecord(username,data[selected[1]+1]):
+            del data[selected[1]+1]
             selected = (selected[0],1)
 
       if ch == 27:
@@ -243,5 +247,15 @@ def main():
     curses.nocbreak()
     curses.endwin()
 
+# TODO define Message Handler for Websocket
+def message_handle():
+  pass
+
+def main():
+
+  if len(sys.argv) == 1:
+    ui()
+  else:
+    print(sys.argv)
 
 main()
