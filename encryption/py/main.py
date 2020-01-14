@@ -12,7 +12,7 @@ password = None
 file = None
 
 def uiLogin(scr):
-  global data, key, file, password, exit
+  global data, key, file, password
   username = scr.update(("name",None,None))
   if not username:
     return True
@@ -44,8 +44,8 @@ def main():
 
   if len(sys.argv) == 1:
     global data
-    ch = None
     try:
+      ch = None
       scr = ui()
       while not uiLogin(scr):
         pass
@@ -59,7 +59,7 @@ def main():
       scr.tearDown()
     finally:
       scr.tearDown()
-  elif sys.argv:
+  elif sys.argv[1] == '-s':
     print(sys.argv)
 
 main()

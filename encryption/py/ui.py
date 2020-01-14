@@ -189,4 +189,3 @@ class ui:
 		self.__paintBorder(self.stdscr)
 		self.__printMenu(self.stdscr,pos)
 		self.__printData(self.stdscr,pos,data)
-
