@@ -12,13 +12,18 @@ password = None
 file = None
 
 def uiLogin(scr):
-  global data, key, file, password
+  global password
   username = scr.update(("name",None,None))
   if not username:
     return True
   password = scr.update(("pass",None,None))
   if not password:
     return True
+
+  return login(username)
+
+def login(username):
+  global data, key, file, password
   password = password.encode()
   file = f'..\\data\\{username}.hex'
 
@@ -33,15 +38,15 @@ def uiLogin(scr):
   else:
     key = os.urandom(int(256/8))
     store_entry(file,{"cipher":salt+encrypt(passKey,key,password),"entry":''})
-
   return True
+
+
 
 # TODO define Message Handler for Websocket
 def message_handle():
   pass
 
 def main():
-
   if len(sys.argv) == 1:
     global data
     try:
