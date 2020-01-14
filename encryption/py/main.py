@@ -61,5 +61,7 @@ def main():
       scr.tearDown()
   elif sys.argv[1] == '-s':
     print(sys.argv)
+  else:
+    print(f'{sys.argv[1]} not supported')
 
 main()
