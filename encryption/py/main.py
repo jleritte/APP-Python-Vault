@@ -49,10 +49,9 @@ def log(mssg,out=False,error=False):
   write_log(f'../logs/{date.today().isoformat()}_logs.txt',message)
   print(message)
 
-def parseMessage(data):
-  out = json.loads(data).values()
-  print(out)
-  return out
+def updateFile():
+  for record in data:
+    store_entry(lock_record(key,password,record))
 
 
 # TODO define Message Handler for Websocket
@@ -60,8 +59,12 @@ async def message_handle(websocket,path):
   log(f"{websocket.remote_address[0]} Connected",1)
   try:
     async for message in websocket:
-      action, data = parseMessage(message)
+      action, data = json.loads(message).values()
       log(f'{websocket.remote_address[0]} said {action}')
+      if action = 'login':
+        pass
+      if action = 'update':
+
       # await websocket.send(f"Echo {message}")
       # log(f'{websocket.remote_address[0]} Echoed',1)
   except websockets.exceptions.ConnectionClosedError:
@@ -82,6 +85,7 @@ def main():
         if not exit:
           break
         data = exit
+        updateFile()
         ch = scr.stdscr.getch()
     except:
       scr.tearDown()
