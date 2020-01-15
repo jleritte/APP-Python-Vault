@@ -42,22 +42,32 @@ def login(username):
     store_entry(file,{"cipher":salt+encrypt(passKey,key,password),"entry":''})
   return True
 
-def log(mssg,out=False):
-  caret = ">>" if out else "<"
-  message = f"{caret} {mssg} @{datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}"
+def log(mssg,out=False,error=False):
+  caret = ">>" if out else "<<"
+  caret = "!!" if error else caret
+  message = f"{caret} {mssg} [{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}]"
   write_log(f'../logs/{date.today().isoformat()}_logs.txt',message)
   print(message)
 
+def parseMessage(data):
+  out = json.loads(data).values()
+  print(out)
+  return out
+
+
 # TODO define Message Handler for Websocket
 async def message_handle(websocket,path):
-  log(f"{websocket.remote_address[0]} Connected",True)
+  log(f"{websocket.remote_address[0]} Connected",1)
   try:
     async for message in websocket:
-      log(f'{websocket.remote_address[0]} said {message}')
+      action, data = parseMessage(message)
+      log(f'{websocket.remote_address[0]} said {action}')
+      # await websocket.send(f"Echo {message}")
+      # log(f'{websocket.remote_address[0]} Echoed',1)
   except websockets.exceptions.ConnectionClosedError:
-    log(f"!Error with {websocket.remote_address[0]} {sys.exc_info()[1]}",True)
+    log(f"Error {websocket.remote_address[0]} {sys.exc_info()[1]}",1,1)
   finally:
-    log(f"Connection Closed with {websocket.remote_address[0]}",True)
+    log(f"{websocket.remote_address[0]} Closed Connection",1)
 
 def main():
   if len(sys.argv) == 1:
@@ -79,7 +89,8 @@ def main():
       scr.tearDown()
   elif sys.argv[1] == '-s':
     print('Server Started')
-    start_server = websockets.serve(message_handle, "localhost", 9002)
+    # start_server = websockets.serve(message_handle, "localhost", 9002)
+    start_server = websockets.serve(message_handle, "192.168.51.48", 9002)
 
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
