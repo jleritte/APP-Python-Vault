@@ -2,6 +2,7 @@
 from crypto import *
 from file_handle import *
 from ui import ui
+from datetime import datetime, date
 import sys
 import asyncio
 import websockets
@@ -25,7 +26,7 @@ def uiLogin(scr):
 def login(username):
   global data, key, file, password
   password = password.encode()
-  file = f'..\\data\\{username}.hex'
+  file = f'../data/{username}.hex'
 
   data = parse_file(file)
   salt, passKey = derive_key(password,data[0]['salt'] if len(data) else None)
@@ -40,7 +41,11 @@ def login(username):
     store_entry(file,{"cipher":salt+encrypt(passKey,key,password),"entry":''})
   return True
 
-
+def log(mssg,out=False):
+  caret = ">>" if out else "<"
+  message = f"{caret} {mssg} @{datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}"
+  write_log(f'../logs/{date.today().isoformat()}_logs.txt',message)
+  print(message)
 
 # TODO define Message Handler for Websocket
 def message_handle():
@@ -69,4 +74,4 @@ def main():
   else:
     print(f'{sys.argv[1]} not supported')
 
-main()
+# main()
