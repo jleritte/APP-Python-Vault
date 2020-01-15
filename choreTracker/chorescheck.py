@@ -126,7 +126,7 @@ async def message_handle(websocket, path):
   try:
     async for message in websocket:
       action,task = json.loads(message).values()
-      log(f"{action} {task}")
+      log(f"{websocket.remote_address[0]} requested {action} {task}")
 
       if action == 'check':
         chores[task] = stamp_task(chores[task])
@@ -137,12 +137,12 @@ async def message_handle(websocket, path):
 
       response = wrap_message(chores)
       await websocket.send(response)
-      log(f"Updated Client",True)
+      log(f"Updated Client {websocket.remote_address[0]}",True)
 
   except websockets.exceptions.ConnectionClosedError:
-    log(f"!Error {sys.exc_info()[1]}",True)
+    log(f"!Error {websocket.remote_address[0]} {sys.exc_info()[1]}",True)
   finally:
-    log(f"Closed",True)
+    log(f"Closed {websocket.remote_address[0]}",True)
 
 def main():
   start_server = websockets.serve(message_handle, "localhost", 9001)

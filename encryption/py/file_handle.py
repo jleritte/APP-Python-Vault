@@ -37,4 +37,4 @@ def parse_file(name):
 
 def write_log(name,log):
   with open(Path(name),'a+') as f:
-    write_to(f,["",log])
+    write_to(f,[log,""])

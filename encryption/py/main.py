@@ -6,6 +6,7 @@ from datetime import datetime, date
 import sys
 import asyncio
 import websockets
+import json
 
 data = []
 key = None
@@ -48,8 +49,15 @@ def log(mssg,out=False):
   print(message)
 
 # TODO define Message Handler for Websocket
-def message_handle():
-  pass
+async def message_handle(websocket,path):
+  log(f"{websocket.remote_address[0]} Connected",True)
+  try:
+    async for message in websocket:
+      log(f'{websocket.remote_address[0]} said {message}')
+  except websockets.exceptions.ConnectionClosedError:
+    log(f"!Error with {websocket.remote_address[0]} {sys.exc_info()[1]}",True)
+  finally:
+    log(f"Connection Closed with {websocket.remote_address[0]}",True)
 
 def main():
   if len(sys.argv) == 1:
@@ -70,8 +78,12 @@ def main():
     finally:
       scr.tearDown()
   elif sys.argv[1] == '-s':
-    print(sys.argv)
+    print('Server Started')
+    start_server = websockets.serve(message_handle, "localhost", 9002)
+
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
   else:
     print(f'{sys.argv[1]} not supported')
 
-# main()
+main()
