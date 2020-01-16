@@ -3,6 +3,7 @@ from crypto import *
 from file_handle import *
 from ui import ui
 from datetime import datetime, date
+import traceback
 import sys
 import asyncio
 import websockets
@@ -61,10 +62,10 @@ async def message_handle(websocket,path):
     async for message in websocket:
       action, data = json.loads(message).values()
       log(f'{websocket.remote_address[0]} said {action}')
-      if action = 'login':
+      if action == 'login':
         pass
-      if action = 'update':
-
+      if action == 'update':
+        pass
       # await websocket.send(f"Echo {message}")
       # log(f'{websocket.remote_address[0]} Echoed',1)
   except websockets.exceptions.ConnectionClosedError:
@@ -85,10 +86,11 @@ def main():
         if not exit:
           break
         data = exit
-        updateFile()
+        # updateFile()
         ch = scr.stdscr.getch()
     except:
       scr.tearDown()
+      traceback.print_exec()
     finally:
       scr.tearDown()
   elif sys.argv[1] == '-s':

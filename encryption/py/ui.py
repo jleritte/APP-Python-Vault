@@ -1,6 +1,5 @@
 # UI class to handle curses
 import curses
-import traceback
 
 stdscr = None
 
