@@ -53,29 +53,42 @@ def log(mssg,out=False,error=False):
 def updateFile():
   for record in data:
     store_entry(file,lock_record(key,password,record))
+    record['entry'] = ba.b2a_hex(record['cipher']).decode()
     unlock_record(key,password,record)
+
+def wrapResponse(action,success,data=None):
+  response = {"action":action,"success":success}
+  if data:
+    response['data'] = data
+  return json.dumps(response)
 
 
 # TODO define Message Handler for Websocket
 async def message_handle(websocket,path):
+  global password
   log(f"{websocket.remote_address[0]} Connected",1)
   try:
     async for message in websocket:
       action, data = json.loads(message).values()
+      response = None
+      success = False
       log(f'{websocket.remote_address[0]} said {action}')
       if action == 'login':
-        pass
+        password = data['password']
+        success = login(data['username'])
+        response = wrapResponse(action, success, read_raw(file) if success else None)
       if action == 'update':
         pass
-      # await websocket.send(f"Echo {message}")
-      # log(f'{websocket.remote_address[0]} Echoed',1)
+
+      if response:
+        await websocket.send(response)
+        log(f'{websocket.remote_address[0]} {action} {success}',1)
   except websockets.exceptions.ConnectionClosedError:
     log(f"Error {websocket.remote_address[0]} {sys.exc_info()[1]}",1,1)
   finally:
     log(f"{websocket.remote_address[0]} Closed Connection",1)
 
-def main():
-  if len(sys.argv) == 1:
+def start_ui():
     global data
     try:
       ch = None
@@ -94,13 +107,19 @@ def main():
       traceback.print_exc()
     finally:
       scr.tearDown()
-  elif sys.argv[1] == '-s':
-    print('Server Started')
-    # start_server = websockets.serve(message_handle, "localhost", 9002)
-    start_server = websockets.serve(message_handle, "192.168.51.48", 9002)
 
-    asyncio.get_event_loop().run_until_complete(start_server)
+def start_server():
+    # server = websockets.serve(message_handle, "localhost", 9002)
+    server = websockets.serve(message_handle, "192.168.51.48", 9002)
+
+    asyncio.get_event_loop().run_until_complete(server)
     asyncio.get_event_loop().run_forever()
+
+def main():
+  if len(sys.argv) == 1:
+    start_ui()
+  elif sys.argv[1] == '-s':
+    start_server()
   else:
     print(f'{sys.argv[1]} not supported')
 
