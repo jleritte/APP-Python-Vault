@@ -4,7 +4,7 @@ import {encode,decode,toHexString,fromHexString} from './utils.js'
 const c = crypto,
 			s = c.subtle
 
-let dataKey, passbytes, initialized = false
+let dataKey, passbytes, serverPubKey, initialized = false
 
 export default class CRYPTO {
 	random(size = 1) {
@@ -49,6 +49,11 @@ export default class CRYPTO {
 			}, keySeed, {name: 'AES-GCM',length: 256},
 			false, ['encrypt','decrypt'])
 		return passKey
+	}
+
+	async importPublicKey(data) {
+		data = fromHexString(data)
+		let pubKey = s.importKey()
 	}
 
 	async unlockDataKey(passphrase,data) {

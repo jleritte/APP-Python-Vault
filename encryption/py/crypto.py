@@ -1,11 +1,14 @@
 # crypto functions
 import os, hashlib
 import binascii as ba
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from ast import literal_eval
 
 BE = default_backend()
+p256 = ec.SECP256R1()
 
 def derive_key(passphrase, salt):
   salt = salt if salt != None else os.urandom(16)
