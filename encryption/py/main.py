@@ -52,7 +52,8 @@ def log(mssg,out=False,error=False):
 
 def updateFile():
   for record in data:
-    store_entry(lock_record(key,password,record))
+    store_entry(file,lock_record(key,password,record))
+    unlock_record(key,password,record)
 
 
 # TODO define Message Handler for Websocket
@@ -86,11 +87,11 @@ def main():
         if not exit:
           break
         data = exit
-        # updateFile()
+        updateFile()
         ch = scr.stdscr.getch()
     except:
       scr.tearDown()
-      traceback.print_exec()
+      traceback.print_exc()
     finally:
       scr.tearDown()
   elif sys.argv[1] == '-s':
