@@ -8,6 +8,25 @@ from ast import literal_eval
 
 BE = default_backend()
 p256 = ec.SECP256R1()
+ECDH = ec.ECDH()
+
+def generate_key_pair():
+  key_pair = ec.generate_private_key(p256, BE)
+  return key_pair
+
+def get_shared_key(private,public):
+  shared_key = private.exchange(ECDH,public)
+  return shared_key
+
+def import_public_key(pem):
+  pem = f"-----BEGIN PUBLIC KEY-----\n{pem}\n-----END PUBLIC KEY-----"
+  public_key = load_pem_public_key(pem.encode(),BE)
+  return public_key
+
+def export_public_key(key):
+  key_string = key.public_bytes(encoding = Encoding.PEM,format = PublicFormat.SubjectPublicKeyInfo)
+  key_string = "".join([s.decode() for s in key_string.splitlines()[1:-1]])
+  return key_string
 
 def derive_key(passphrase, salt):
   salt = salt if salt != None else os.urandom(16)

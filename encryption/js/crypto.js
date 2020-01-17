@@ -1,12 +1,16 @@
 //Crypto Object to make usage of WebCrypto less verbose
-import {encode,decode,toHexString,fromHexString} from './utils.js'
+import {encode,decode,toHexString,fromHexString,toBase64,fromBase64} from './utils.js'
 
 const c = crypto,
 			s = c.subtle
 
-let dataKey, passbytes, serverPubKey, initialized = false
+let ecKey, dataKey, passbytes, serverPubKey, currentPubKey
 
 export default class CRYPTO {
+	constructor() {
+		this.generateECKeyPair().then(kp => ecKey = kp)
+	}
+
 	random(size = 1) {
 		return c.getRandomValues(new Uint8Array(size))
 	}
@@ -20,11 +24,10 @@ export default class CRYPTO {
 				additionalData: aad
 			},key,data)
 		const cipherblock = [...iv,...new Uint8Array(ciphertext)]
-		return toHexString(cipherblock)
+		return cipherblock
 	}
 
 	async decrypt(data,key = dataKey, aad = passbytes) {
-		data = fromHexString(data)
 		let iv = data.slice(0,12),
 			plaintext = await s.decrypt({
 				name: 'AES-GCM',
@@ -51,9 +54,43 @@ export default class CRYPTO {
 		return passKey
 	}
 
+	async generateECKeyPair() {
+		keyPair = await s.generateKey({name:"ECDH",namedCurve:"P-256"},true,['deriveKey'])
+		return keyPair
+	}
+
+	async createExchangeKey(privateKey = ec.privateKey,publicKey = serverPubKey) {
+		sharedKey = await s.deriveKey({name: "ECDH", public: publicKey},
+			privateKey,
+			{name: "AES-GCM", length: 256},
+			false,
+			['encrypt','decrypt'])
+		return sharedKey
+	}
+
+	async exportPublicKey(key = ecKey.publicKey ) {
+		keyBytes = await s.exportKey('spki', key)
+		return toBase64(keyBytes)
+	}
+
 	async importPublicKey(data) {
-		data = fromHexString(data)
-		let pubKey = s.importKey()
+		data = fromBase64(data)
+		let pubKey = await s.importKey('spki',
+			pemkey,
+			{name:'ECDH',namedCurve:'P-256'},
+			false,
+			['deriveKey'])
+		return pubKey
+	}
+
+	async setServerPubKey(key) {
+		key = await importPublicKey(key)
+		serverPubKey = key
+	}
+
+	async updateCurrentPubKey(key) {
+		key = await importPublicKey(key)
+		currentPubKey = key
 	}
 
 	async unlockDataKey(passphrase,data) {
@@ -66,6 +103,5 @@ export default class CRYPTO {
 			{name: 'AES-GCM',length: 256},
 			false,
 			['encrypt','decrypt'])
-		initialized = true
 	}
 }

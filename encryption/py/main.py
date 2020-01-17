@@ -10,6 +10,7 @@ import asyncio
 import websockets
 import json
 
+ecKeys = None
 data = []
 key = None
 password = None
@@ -63,11 +64,14 @@ def wrapResponse(action,success,data=None):
     response['data'] = data
   return json.dumps(response)
 
+def unwrapMessage():
+  pass
 
 # TODO define Message Handler for Websocket
 async def message_handle(websocket,path):
   global password
   log(f"{websocket.remote_address[0]} Connected",1)
+  await websocket.send(json.dumps({"key": export_public_key(ecKeys.public_key())}))
   try:
     async for message in websocket:
       action, data = json.loads(message).values()
@@ -110,11 +114,14 @@ def start_ui():
       scr.tearDown()
 
 def start_server():
-    # server = websockets.serve(message_handle, "localhost", 9002)
-    server = websockets.serve(message_handle, "192.168.51.48", 9002)
-
-    asyncio.get_event_loop().run_until_complete(server)
-    asyncio.get_event_loop().run_forever()
+  global ecKeys
+  ecKeys = generate_key_pair()
+  print('Server Keys Generated')
+  # server = websockets.serve(message_handle, "localhost", 9002)
+  server = websockets.serve(message_handle, "192.168.51.111", 9002)
+  print('Starting Server')
+  asyncio.get_event_loop().run_until_complete(server)
+  asyncio.get_event_loop().run_forever()
 
 def main():
   if len(sys.argv) == 1:
