@@ -1,7 +1,6 @@
 # crypto functions
 import os, hashlib
-import binascii as ba
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_public_key
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend

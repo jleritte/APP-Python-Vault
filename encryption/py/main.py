@@ -3,6 +3,7 @@ from crypto import *
 from file_handle import *
 from ui import ui
 from datetime import datetime, date
+import binascii as ba
 import traceback
 import sys
 import asyncio
