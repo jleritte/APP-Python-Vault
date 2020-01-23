@@ -32,7 +32,7 @@ function connectWS() {
 		messageWS(ws)
 	}
 
-	ws.onmessage = e => {
+	ws.onmessage = async e => {
 		data = e.data
 		console.log(data)
 		// update()

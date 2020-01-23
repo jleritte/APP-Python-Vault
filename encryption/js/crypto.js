@@ -1,5 +1,5 @@
 //Crypto Object to make usage of WebCrypto less verbose
-import {encode,decode,toHexString,fromHexString,toBase64,fromBase64} from './utils.js'
+import {encode,decode,fromHexString,toBase64,fromBase64} from './utils.js'
 
 const c = crypto,
 			s = c.subtle
@@ -59,7 +59,7 @@ export default class CRYPTO {
 		return keyPair
 	}
 
-	async createExchangeKey(privateKey = ec.privateKey,publicKey = serverPubKey) {
+	async createExchangeKey(privateKey = ecKey.privateKey,publicKey = serverPubKey) {
 		sharedKey = await s.deriveKey({name: "ECDH", public: publicKey},
 			privateKey,
 			{name: "AES-GCM", length: 256},
@@ -97,7 +97,7 @@ export default class CRYPTO {
 		data = fromHexString(data)
 		passbytes = encode(passphrase)
 		let passKey = await this.deriveKey(data.slice(0,16)),
-			rawKey = await this.decrypt(toHexString(data.slice(16)),passKey)
+			rawKey = await this.decrypt(data.slice(16),passKey)
 		dataKey = await s.importKey('raw',
 			rawKey,
 			{name: 'AES-GCM',length: 256},
