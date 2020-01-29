@@ -55,12 +55,12 @@ export default class CRYPTO {
 	}
 
 	async generateECKeyPair() {
-		keyPair = await s.generateKey({name:"ECDH",namedCurve:"P-256"},true,['deriveKey'])
+		let keyPair = await s.generateKey({name:"ECDH",namedCurve:"P-256"},true,['deriveKey'])
 		return keyPair
 	}
 
 	async createExchangeKey(privateKey = ecKey.privateKey,publicKey = serverPubKey) {
-		sharedKey = await s.deriveKey({name: "ECDH", public: publicKey},
+		let sharedKey = await s.deriveKey({name: "ECDH", public: publicKey},
 			privateKey,
 			{name: "AES-GCM", length: 256},
 			false,
@@ -69,7 +69,7 @@ export default class CRYPTO {
 	}
 
 	async exportPublicKey(key = ecKey.publicKey ) {
-		keyBytes = await s.exportKey('spki', key)
+		let keyBytes = await s.exportKey('spki', key)
 		return toBase64(keyBytes)
 	}
 

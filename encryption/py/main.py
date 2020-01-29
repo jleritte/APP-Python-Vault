@@ -89,7 +89,7 @@ async def message_handle(websocket,path):
         await websocket.send(response)
         log(f'{websocket.remote_address[0]} {action} {success}',1)
   except websockets.exceptions.ConnectionClosedError:
-    log(f"Error {websocket.remote_address[0]} {sys.exc_info()[1]}",1,1)
+    log(f"Error {websocket.remote_address[0]} {sys.exc_info()[1]}",error=1)
   finally:
     log(f"{websocket.remote_address[0]} Closed Connection",1)
 
@@ -117,8 +117,8 @@ def start_server():
   global ecKeys
   ecKeys = generate_key_pair()
   print('Server Keys Generated')
-  # server = websockets.serve(message_handle, "localhost", 9002)
-  server = websockets.serve(message_handle, "192.168.51.111", 9002)
+  server = websockets.serve(message_handle, "localhost", 9002)
+  # server = websockets.serve(message_handle, "192.168.51.111", 9002)
   print('Starting Server')
   asyncio.get_event_loop().run_until_complete(server)
   asyncio.get_event_loop().run_forever()

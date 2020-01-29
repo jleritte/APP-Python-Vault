@@ -1,0 +1,5 @@
+>> 127.0.0.1 Connected [29/01/2020 11:27:09]
+<< 127.0.0.1 said login [29/01/2020 11:27:09]
+>> 127.0.0.1 login True [29/01/2020 11:27:09]
+!! Error 127.0.0.1 code = 1005 (no status code [internal]), no reason [29/01/2020 11:27:19]
+>> 127.0.0.1 Closed Connection [29/01/2020 11:27:19]
