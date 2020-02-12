@@ -1,7 +1,7 @@
 # UI class to handle curses
 import curses
 
-stdscr = None
+char = "none"
 
 class ui:
 	stdscr = None
@@ -143,10 +143,10 @@ class ui:
 		else:
 			for i,item in enumerate(data):
 				if 'plain' in item.keys():
-					y = (i) % (self.size[0] - 3)
+					y = (i % (self.size[0] - 3)) + 2
 					x = int(i / (self.size[0] - 3)) * self.col + 1
-					y += 2
-					scr.addstr(y,self.size[1]-self.col,str((y,x,self.col,i,self.size[0])))
+					# scr.addstr(y,self.size[1]-self.col,str((y,x,self.col,i,self.size[0])))
+					scr.addstr(1,self.size[1]-len(char)-1,char)
 					if i == self.__selected[1]:
 						attr = curses.A_REVERSE
 					else:
@@ -155,6 +155,8 @@ class ui:
 		curses.curs_set(0)
 
 	def __checkChar(self,ch,data):
+		global char
+		char = str(ch)
 		if ch == 27: #Esc
 			return 0
 		if ch == 10: #Enter
@@ -182,6 +184,12 @@ class ui:
 		if ch == 261: #RIGHT
 			select = self.__selected[0] + 1 if self.__selected[0] + 1 < 2  else 2
 			self.__selected = (select,self.__selected[1])
+		if ch == 338: #PGDWN
+			select = self.__selected[1] + (self.size[0] - 3) if self.__selected[1] + (self.size[0] - 3) < len(data) else len(data) - 1
+			self.__selected = (self.__selected[0],select)
+		if ch == 339: #PGUP
+			select = self.__selected[1] - (self.size[0] - 3) if self.__selected[1] - (self.size[0] - 3) > -1  else 0
+			self.__selected = (self.__selected[0],select)
 		return data
 
 	def __printScreen(self,data,pos):
