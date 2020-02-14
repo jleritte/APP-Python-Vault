@@ -137,7 +137,6 @@ class ui:
 			x = x + 2 + len(item)
 
 	def __printData(self, scr, pos, data):
-		# TODO: Fix the column split
 		if len(data) == 0:
 			scr.addstr(2,pos[1],self.__welcomeText,curses.A_BOLD)
 		else:
@@ -146,7 +145,7 @@ class ui:
 					y = (i % (self.size[0] - 3)) + 2
 					x = int(i / (self.size[0] - 3)) * self.col + 1
 					# scr.addstr(y,self.size[1]-self.col,str((y,x,self.col,i,self.size[0])))
-					scr.addstr(1,self.size[1]-len(char)-1,char)
+					# scr.addstr(1,self.size[1]-len(char)-1,char)
 					if i == self.__selected[1]:
 						attr = curses.A_REVERSE
 					else:
