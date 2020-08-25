@@ -3,6 +3,7 @@ from crypto import *
 from file_handle import *
 from ui import ui
 from datetime import datetime, date
+from logger import logger
 import binascii as ba
 import traceback
 import sys
@@ -11,26 +12,28 @@ import websockets
 import json
 
 ecKeys = None
-data = []
-key = None
-password = None
-file = None
+connections = {}
+uiUser = '0000'
+l = logger()
 
 def uiLogin(scr):
-  global password
+  global connections, l
+  connection = {}
   username = scr.update(("name",None,None))
   if not username:
-    return True
+    return False
+  connection['filename'] = f'../data/{username}.hex'
   password = scr.update(("pass",None,None))
   if not password:
-    return True
+    return False
+  connection['password'] = password.encode()
+  connections[uiUser] = connection
+  return login(uiUser)
 
-  return login(username)
-
-def login(username):
-  global data, key, file, password
-  password = password.encode()
-  file = f'../data/{username}.hex'
+def login(cid):
+  global connections
+  password = connections[cid]['password']
+  file = connections[cid]['filename']
 
   data = parse_file(file)
   salt, passKey = derive_key(password,data[0]['salt'] if len(data) else None)
@@ -43,6 +46,8 @@ def login(username):
   else:
     key = os.urandom(int(256/8))
     store_entry(file,{"cipher":salt+encrypt(passKey,key,password),"entry":''})
+  connections[cid]['key'] = key
+  connections[cid]['data'] = data
   return True
 
 def log(mssg,out=False,error=False):
@@ -52,9 +57,13 @@ def log(mssg,out=False,error=False):
   write_log(f'../logs/{date.today().isoformat()}_logs.txt',message)
   print(message)
 
-def updateFile():
-  for record in data:
-    store_entry(file,lock_record(key,password,record))
+def updateFile(cid):
+  global connections
+  user = connections[cid]
+  password = user['password']
+  key = user['key']
+  for record in user['data']:
+    store_entry(user['filename'],lock_record(key,password,record))
     record['entry'] = ba.b2a_hex(record['cipher']).decode()
     unlock_record(key,password,record)
 
@@ -69,8 +78,12 @@ def unwrapMessage():
 
 # TODO define Message Handler for Websocket
 async def message_handle(websocket,path):
-  global password
-  log(f"{websocket.remote_address[0]} Connected",1)
+  print(websocket.remote_address)
+  global connections
+  cid = f"{websocket.remote_address[1]}"
+  connection = connections.get(cid,{})
+  log(f"{websocket.remote_address} Connected",1)
+  connections[cid] = connection
   await websocket.send(json.dumps({"key": export_public_key(ecKeys.public_key())}))
   try:
     async for message in websocket:
@@ -79,9 +92,12 @@ async def message_handle(websocket,path):
       success = False
       log(f'{websocket.remote_address[0]} said {action}')
       if action == 'login':
-        password = data['password']
-        success = login(data['username'])
-        response = wrapResponse(action, success, read_raw(file) if success else None)
+        connection['password'] = data['password'].encode()
+        connection['filename'] = f'../data/{data["username"]}.hex'
+
+        success = login(cid)
+        print(connection,connections)
+        response = wrapResponse(action, success, connection['data'] if success else None)
       if action == 'update':
         pass
 
@@ -91,21 +107,23 @@ async def message_handle(websocket,path):
   except websockets.exceptions.ConnectionClosedError:
     log(f"Error {websocket.remote_address[0]} {sys.exc_info()[1]}",error=1)
   finally:
-    log(f"{websocket.remote_address[0]} Closed Connection",1)
+    log(f"{websocket.remote_address} Closed Connection",1)
+    connections.pop(cid,None)
 
 def start_ui():
-    global data
+    global connections
     try:
       ch = None
       scr = ui()
       while not uiLogin(scr):
         pass
-      while data:
+      data = connections[uiUser]['data']
+      while True:
         exit = scr.update(('print', data, ch))
-        if not exit:
+        if exit == None:
           break
         data = exit
-        updateFile()
+        updateFile(uiUser)
         ch = scr.stdscr.getch()
     except:
       scr.tearDown()

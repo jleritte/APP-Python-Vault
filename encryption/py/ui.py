@@ -1,5 +1,8 @@
 # UI class to handle curses
 import curses
+from logger import logger
+
+log = logger()
 
 char = "none"
 
@@ -49,6 +52,7 @@ class ui:
 		curses.echo()
 		curses.nocbreak()
 		curses.endwin()
+		log.out()
 
 	def __paintBorder(self, scr):
 		scr.border(0)

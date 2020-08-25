@@ -5,7 +5,7 @@ import {decode} from './utils.js'
 const c = new CRYPTO()
 
 let data,
-		// ws = connectWS(),
+		ws = connectWS(),
 		password = 'test'
 
 function openFile(e) {
@@ -29,13 +29,13 @@ function connectWS() {
 	let ws = new WebSocket('ws://127.0.0.1:9002')
 	ws.onopen = e => {
 		console.log('Connected')
-		messageWS(ws)
 	}
 
 	ws.onmessage = async e => {
-		data = e.data
+		let {data} = e
+		data = JSON.parse(data)
 		console.log(data)
-		// update()
+		update(data)
 	}
 
 	ws.onclose = e => {
@@ -60,3 +60,15 @@ async function unlockRecords(records) {
 		console.log(JSON.parse(plain))
 	}
 }
+
+async function update(data) {
+	if(data.key) {
+		await c.setServerPubKey(data.key)
+	}
+}
+
+function login(username,password) {
+	ws.send(JSON.stringify({action:'login',data:{username,password}}))
+}
+
+window.login = login

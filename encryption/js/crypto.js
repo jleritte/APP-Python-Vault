@@ -74,7 +74,7 @@ export default class CRYPTO {
 	}
 
 	async importPublicKey(data) {
-		data = fromBase64(data)
+		let pemkey = fromBase64(data)
 		let pubKey = await s.importKey('spki',
 			pemkey,
 			{name:'ECDH',namedCurve:'P-256'},
@@ -84,12 +84,12 @@ export default class CRYPTO {
 	}
 
 	async setServerPubKey(key) {
-		key = await importPublicKey(key)
+		key = await this.importPublicKey(key)
 		serverPubKey = key
 	}
 
 	async updateCurrentPubKey(key) {
-		key = await importPublicKey(key)
+		key = await this.importPublicKey(key)
 		currentPubKey = key
 	}
 
