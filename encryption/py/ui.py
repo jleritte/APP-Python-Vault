@@ -1,10 +1,12 @@
 # UI class to handle curses
 import curses
 from logger import logger
+from crypto import *
 
 log = logger()
 
 char = "none"
+pw = None
 
 class ui:
 	stdscr = None
@@ -25,9 +27,12 @@ class ui:
 		self.__paintBorder(self.stdscr)
 
 	def update(self,message):
+		global pw
 		exit = 1
 		pos = (1,1)
-		action, data, ch = message
+		action, data, ch, pword = message
+		if pw == None:
+			pw = pword
 
 		username = 'jokersadface'
 
@@ -71,9 +76,10 @@ class ui:
 
 		if len(old) == 1:
 			title = "New Record"
-			old = ('','','')
+			old = ('',('',''))
 		else:
 			title = "Edit %s" % old[0]
+			old = unlock_data(old,pw)
 
 		popsize = pop.getmaxyx()
 		pop.addstr(0, int(popsize[1]/2 - len(title)/2), title)
@@ -82,14 +88,14 @@ class ui:
 		name = self.__textEntry(pop,self.__printPrompt(pop,(1,1),0,prompts),old[0])
 		if not name:
 			return
-		pword = self.__textEntry(pop,self.__printPrompt(pop,(2,1),1,prompts),old[1],"*")
+		pword = self.__textEntry(pop,self.__printPrompt(pop,(2,1),1,prompts),old[1][0],"*")
 		if not pword:
 			return
-		uname = self.__textEntry(pop,self.__printPrompt(pop,(3,1),2,prompts),old[2])
+		uname = self.__textEntry(pop,self.__printPrompt(pop,(3,1),2,prompts),old[1][1])
 		if not uname:
 			return
 
-		return (name, pword, uname)
+		return lock_data((name,(pword,uname)),pw)
 
 	def __deleteRecord(self,record):
 		curses.curs_set(1)

@@ -5,6 +5,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from ast import literal_eval
+import binascii as ba
 
 BE = default_backend()
 p256 = ec.SECP256R1()
@@ -63,3 +64,11 @@ def lock_record(key, passphrase, record):
   record['cipher'] = encrypt(key,str(record['plain']).encode(),passphrase)
   del record['plain']
   return record
+
+def unlock_data(record,passphrase):
+  salt,key = derive_key(record[0].encode(),passphrase)
+  return (record[0],literal_eval(decrypt(key,ba.a2b_hex(record[1])).decode()))
+
+def lock_data(record,passphrase):
+  salt,key = derive_key(record[0].encode(),passphrase)
+  return (record[0],ba.b2a_hex(encrypt(key,str(record[1]).encode())).decode())

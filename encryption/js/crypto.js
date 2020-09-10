@@ -11,6 +11,8 @@ export default class CRYPTO {
 		this.generateECKeyPair().then(kp => ecKey = kp)
 	}
 
+	get pubKeySet() {return !!serverPubKey}
+
 	random(size = 1) {
 		return c.getRandomValues(new Uint8Array(size))
 	}
@@ -37,10 +39,10 @@ export default class CRYPTO {
 		return plaintext
 	}
 
-	async deriveKey(salt) {
+	async deriveKey(salt, pass=passbytes) {
 		let iterations = 100000,
 		keySeed = await s.importKey('raw',
-			passbytes,
+			pass,
 			{name: 'PBKDF2'},
 			false,
 			['deriveKey']),

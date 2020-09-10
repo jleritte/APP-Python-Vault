@@ -15,15 +15,16 @@ ecKeys = None
 connections = {}
 uiUser = '0000'
 l = logger()
+tran_AAD = 'transmission'.encode()
 
 def uiLogin(scr):
   global connections, l
   connection = {}
-  username = scr.update(("name",None,None))
+  username = scr.update(("name",None,None,None))
   if not username:
     return False
   connection['filename'] = f'../data/{username}.hex'
-  password = scr.update(("pass",None,None))
+  password = scr.update(("pass",None,None,None))
   if not password:
     return False
   connection['password'] = password.encode()
@@ -46,7 +47,7 @@ def login(cid):
   else:
     key = os.urandom(int(256/8))
     store_entry(file,{"cipher":salt+encrypt(passKey,key,password),"entry":''})
-  connections[cid]['key'] = key
+  connections[cid]['dkey'] = key
   connections[cid]['data'] = data
   return True
 
@@ -54,60 +55,89 @@ def log(mssg,out=False,error=False):
   caret = ">>" if out else "<<"
   caret = "!!" if error else caret
   message = f"{caret} {mssg} [{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}]"
-  write_log(f'../logs/{date.today().isoformat()}_logs.txt',message)
+  # write_log(f'../logs/{date.today().isoformat()}_logs.txt',message)
   print(message)
 
 def updateFile(cid):
   global connections
   user = connections[cid]
   password = user['password']
-  key = user['key']
+  key = user['dkey']
   for record in user['data']:
     store_entry(user['filename'],lock_record(key,password,record))
     record['entry'] = ba.b2a_hex(record['cipher']).decode()
     unlock_record(key,password,record)
 
-def wrapResponse(action,success,data=None):
+def wrapResponse(cid,action,success,data=None):
+  global connections
+  key = connections.get(cid,{'key':None})['key']
   response = {"action":action,"success":success}
   if data:
     response['data'] = data
-  return json.dumps(response)
+  return lockMessage(json.dumps(response),key)
 
-def unwrapMessage():
-  pass
+def unwrapMessage(cid,message):
+  global connections
+  user = connections.get(cid,{})
+  key = user.get('key',None)
+  if not key:
+    out = json.loads(message).values()
+  else:
+    out = json.loads(unlockMessage(message,key)).values()
+  return out
+
+def unlockMessage(message,key):
+  global ecKeys
+  tranKey = get_shared_key(ecKeys,key)
+  message = decrypt(tranKey,ba.a2b_hex(message),tran_AAD)
+  return message
+
+def lockMessage(message,key):
+  global ecKeys
+  tranKey = get_shared_key(ecKeys,key)
+  message = ba.b2a_hex(encrypt(tranKey,message.encode(),tran_AAD)).decode()
+  return message
 
 # TODO define Message Handler for Websocket
 async def message_handle(websocket,path):
-  print(websocket.remote_address)
   global connections
   cid = f"{websocket.remote_address[1]}"
   connection = connections.get(cid,{})
-  log(f"{websocket.remote_address} Connected",1)
+  log(f"{websocket.remote_address[0]} Connected with id {cid}",1)
   connections[cid] = connection
   await websocket.send(json.dumps({"key": export_public_key(ecKeys.public_key())}))
   try:
     async for message in websocket:
-      action, data = json.loads(message).values()
+      action, data = unwrapMessage(cid,message)
       response = None
       success = False
-      log(f'{websocket.remote_address[0]} said {action}')
+      log(f'{websocket.remote_address[0]},{cid} said {action}')
+      if action == 'key':
+        connection['key'] = import_public_key(data)
       if action == 'login':
         connection['password'] = data['password'].encode()
         connection['filename'] = f'../data/{data["username"]}.hex'
-
         success = login(cid)
-        print(connection,connections)
-        response = wrapResponse(action, success, connection['data'] if success else None)
+        response = wrapResponse(cid,action, success, read_raw(connection['filename'])[0] if success else None)
+      if action == 'sync':
+        success = len(connection) > 0
+        response = wrapResponse(cid,action, success, read_raw(connection['filename'])[1:] if success else None)
       if action == 'update':
-        pass
+        for entry in data:
+          entry['plain'] = tuple(entry['plain'])
+        success = len(connection) > 0
+        if(success):
+          connections[cid]['data'] = data
+          updateFile(cid)
+        response = wrapResponse(cid,action,success,None)
 
       if response:
         await websocket.send(response)
-        log(f'{websocket.remote_address[0]} {action} {success}',1)
+        log(f'{websocket.remote_address[0]},{cid} {action} {success}',1)
   except websockets.exceptions.ConnectionClosedError:
-    log(f"Error {websocket.remote_address[0]} {sys.exc_info()[1]}",error=1)
+    log(f"Error {websocket.remote_address[0]},{cid} {sys.exc_info()[1]}",error=1)
   finally:
-    log(f"{websocket.remote_address} Closed Connection",1)
+    log(f"{websocket.remote_address[0]},{cid} Closed Connection",1)
     connections.pop(cid,None)
 
 def start_ui():
@@ -119,7 +149,7 @@ def start_ui():
         pass
       data = connections[uiUser]['data']
       while True:
-        exit = scr.update(('print', data, ch))
+        exit = scr.update(('print', data, ch,connections[uiUser]['password']))
         if exit == None:
           break
         data = exit
