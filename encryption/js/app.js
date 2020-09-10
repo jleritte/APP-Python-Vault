@@ -132,3 +132,4 @@ window.data = data
 window.unlockData = unlockData
 window.lockData = lockData
 window.update = update
+window.sync = sync
