@@ -1,117 +1,44 @@
-import $$ from './dom.js'
-import CRYPTO from './crypto.js'
-import {encode,decode,fromHexString,toHexString} from './utils.js'
+import CRYPTO, {unlockRecords,unlockData} from './crypto.js'
+import socket from './websocket.js'
+import EventEmitter from './events.js'
+import {
+    Login,
+    ErrorDiv,
+    RecordHTML,
+    RecordList,
+    RecordButtons,
+    EditRecordForm,
+    Modal,
+    DeleteConfirm
+  } from './ui.js'
 
 const c = new CRYPTO(),
-      tranAad = encode('transmission')
+      listeners = new EventEmitter(),
+      data = new Map(),
+      ws = new socket(listeners),
+      approot = document.body
 
-let data = new Map(),
-    ws = connectWS(),
-    pw = 'test'
+let error, logform, records, buttons, add, selected, record, edit
 
-function connectWS() {
-  const ws = new WebSocket('ws://127.0.0.1:9002')
-  ws.onopen = async e => {
-    console.log('Connected')
-    const key = await c.exportPublicKey()
-    ws.send(JSON.stringify({action:"key",data:key}))
-  }
-
-  ws.onmessage = async e => {
-    let {data} = e
-    if(c.pubKeySet){
-      return process(await unwrap(data))
-    }
-    data = JSON.parse(data)
-    if(data.key) await c.setServerPubKey(data.key)
-  }
-
-  ws.onclose = e => {
-    if(e.wasClean) {
-      console.log(`Connection closed - code:${e.code}  reason:${e.reason}`)
+function login() {
+  const password = logform.querySelector('.password').value
+  ws.send('login',{username:'jokersadface',password})
+  listeners.listen('login',async (success,data) => {
+    if(success){
+      await c.unlockDataKey(password, data)
+      sync()
     } else {
-      console.log('Connection Died')
+      error = error || new ErrorDiv(logform.parentNode,'Invalid Password')
+      animate(logform,'shake')
     }
+  })
+}
+
+function clearError() {
+  if(error) {
+    remove(error,'fadeOut')
+    error = undefined
   }
-
-  ws.onerror = e => {
-    console.log(`Error: ${e.message}`)
-  }
-  return ws
-}
-
-async function unwrap(data) {
-  const tranKey = await c.createExchangeKey()
-  data = decode(await c.decrypt(fromHexString(data),tranKey,tranAad))
-  return JSON.parse(data)
-}
-
-async function sendMessage(message) {
-  const tranKey = await c.createExchangeKey()
-  message = toHexString(await c.encrypt(message,tranKey,tranAad))
-  ws.send(message)
-}
-
-
-async function unlockRecords(records) {
-  for(const record of records) {
-    let plain = await c.decrypt(fromHexString(record))
-    plain = decode(plain).replace(/\(/,'[').replace(/\)/,']').replace(/'/g,'"')
-    data.set(record,JSON.parse(plain))
-  }
-
-  /*this is test ui*/
-  let dom = document.querySelector('.records')
-  for(const record of data) {
-    const div = document.createElement('div')
-    div.textContent = record[1][0]
-    div.id = record[0]
-    div.onclick = ({target}) => openRecord(target.id)
-    dom.appendChild(div)
-  }
-}
-
-async function openRecord(id) {
-  const content = await unlockData(data.get(id))
-  alert(`${content[0]}\n${content[1][0]}\n${content[1][1]}`)
-}
-
-async function unlockData([name,data]) {
-  const key = await c.deriveKey(encode(pw),encode(name))
-  data = await c.decrypt(fromHexString(data),key,encode(''))
-  data = decode(data).replace(/\(/,'[').replace(/\)/,']').replace(/'/g,'"')
-  return [name,JSON.parse(data)]
-}
-
-async function lockData([name,data]) {
-  const key = await c.deriveKey(encode(pw),encode(name))
-  data = JSON.stringify(data).replace(/\[/,'(').replace(/\]/,')').replace(/'/g,'"')
-  data = await c.encrypt(encode(data),key,encode(''))
-  return [name,toHexString(data)]
-}
-
-async function process({action,success,data}) {
-  if(action === 'login') {
-    if(success){
-      await c.unlockDataKey(pw, data)
-      sync()
-    }
-  }
-  if(action === 'sync') {
-    if(success){
-      await unlockRecords(data)
-    }
-  }
-  if(action === 'update') {
-    if(success){
-      sync()
-    }
-  }
-}
-
-function login(username,password) {
-  pw = password
-  sendMessage(JSON.stringify({action:'login',data:{username,password}}))
 }
 
 function logout() {
@@ -120,16 +47,147 @@ function logout() {
 
 function update() {
   const out = [...data].map(([k,v]) => {return{entry:k,plain:v}})
-  sendMessage(JSON.stringify({action:'update',data:out}))
+  ws.send('update',out)
+  listeners.listen('update',async (success,data) => {
+    if(success){
+      sync()
+    }
+  })
 }
 
 function sync() {
-  sendMessage(JSON.stringify({action:'sync',data:''}))
+  ws.send('sync')
+  listeners.listen('sync',async (success,raw) => {
+    if(success){
+      await unlockRecords(raw,data)
+      remove(logform,'fadeOut',showRecords)
+    }
+  })
 }
 
-window.login = login
-window.data = data
-window.unlockData = unlockData
-window.lockData = lockData
-window.update = update
-window.sync = sync
+function showRecords() {
+  records = new RecordList(approot,data,selectRecord)
+  buttons = new RecordButtons(approot,newRecord,editRecord,promptDelete)
+  add = buttons.lastElementChild
+  animate(records,'fadeIn')
+}
+
+function selectRecord(e) {
+  const record = e.target
+  clearError()
+  for(const child of records.children) {
+    child.classList.remove('highlight')
+  }
+
+  selected = record.dataset.rid
+  record.classList.add('highlight')
+}
+
+async function editRecord(e) {
+  if(!selected) {
+    buttonError(e.target)
+  } else {
+    clearError()
+    record = await openRecord(selected)
+    openEditFrom(record)
+  }
+}
+
+function newRecord() {
+  clearError()
+  selected = undefined
+  record = undefined
+  for(let child of records.children) {
+    child.classList.remove('highlight')
+  }
+  openEditFrom()
+}
+
+function openEditFrom(record = {}) {
+  if(edit) closeEditForm(0)
+  edit = new EditRecordForm(approot,record,saveRecord,closeEditForm)
+  animate(edit,'slideInRight')
+}
+
+async function openRecord(id) {
+  const content = await unlockData(data.get(id))
+  console.log(content)
+  return {name: content[0],password:content[1][0],userId: content[1][1]}
+}
+
+
+function closeEditForm(replace = true) {
+  if(edit) {
+    remove(edit,replace ? 'slideOutRight' : 'fadeOut')
+    edit = undefined
+  }
+}
+
+async function saveRecord() {
+  let temp = Array.from(edit.querySelectorAll('input')).reduce((a,v) => {
+              a[v.className] = v.value
+              return a
+            },{}),
+      isNew = !record
+  record = !record ? new Record(temp.name) : record
+  record.name = temp.name
+  record.userId = temp.userId
+  record.password = temp.password
+  await vault.addRecord(record)
+  vault.sync()
+  if(isNew){
+    temp = new ui.RecordHTML(records,record,selectRecord)
+    animate(temp,'fadeIn')
+  }
+  closeEditForm()
+}
+
+async function promptDelete(e) {
+  if(!selected) {
+    buttonError(e.target)
+  } else {
+    clearError()
+    let temp = await vault.retrieveRecord(selected)
+    openModal()
+    new DeleteConfirm(modal,temp.name,deleteRecord,closeModal)
+  }
+}
+
+function animate(node,clss) {
+  node.classList.toggle(clss)
+  const duration = +getComputedStyle(node).animationDuration.replace('s','') * 1000
+  setTimeout(_=> node.classList.toggle(clss),duration)
+}
+
+function buttonError(target) {
+  if(data.size < 1) {
+    error = error ? error : new ErrorDiv(buttons, 'Please Create a Record First')
+    animate(add,'shake')
+  } else {
+    error = error ? error : new ErrorDiv(buttons,'Please Select a Record')
+    animate(target,'shake')
+  }
+}
+
+function remove(node,clss,follow) {
+  animate(node,clss)
+  let duration = +getComputedStyle(node).animationDuration.replace('s','') * 1000
+  setTimeout(_=>{
+    node.remove()
+    follow && follow()
+  },duration - 50)
+}
+
+function init() {
+  logform = new Login(approot,{onclick: login,onkeydown: clearError})
+  animate(logform,'fadeIn')
+  window.onkeydown = e => {
+    switch(e.code) {
+      case 'Enter':
+      case 'NumpadEnter': login(); break;
+    }
+  }
+}
+
+
+init()
