@@ -40,10 +40,16 @@ class Password extends Input {
 	constructor(parent,options = {}) {
 		options.type = 'password'
 		const pass = super(parent,options)
-		pass.ondblclick = e => e.target.type = e.target.type === 'password' ? 'text' : 'password'
-
+		pass.ondblclick = copyText
 		return pass
 	}
+}
+
+async function copyText(e) {
+	e.target.type = 'input'
+	e.target.select()
+	await document.execCommand('copy')
+	e.target.type = 'password'
 }
 
 class Login extends Div {

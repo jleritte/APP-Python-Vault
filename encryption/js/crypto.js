@@ -135,7 +135,7 @@ export async function unlockData([name,data]) {
   return [name,JSON.parse(data)]
 }
 
-async function lockData([name,data]) {
+export async function lockData([name,data]) {
   const key = await deriveKey(passbytes,encode(name))
   data = JSON.stringify(data).replace(/\[/,'(').replace(/\]/,')').replace(/'/g,'"')
   data = await encrypt(encode(data),key,encode(''))

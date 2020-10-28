@@ -1,3 +1,5 @@
+# https://diceware.dmuth.org/
+
 # Main Loop
 from crypto import *
 from file_handle import *
@@ -64,9 +66,14 @@ def updateFile(cid):
   password = user['password']
   key = user['dkey']
   for record in user['data']:
+    if len(record['entry']) > 0:
+      delete_entry(user['filename'],lock_record(key,password,record))
+      unlock_record(key,password,record)
+  for record in user['dif']:
     store_entry(user['filename'],lock_record(key,password,record))
     record['entry'] = ba.b2a_hex(record['cipher']).decode()
     unlock_record(key,password,record)
+  user['data'] = user['dif']
 
 def wrapResponse(cid,action,success,data=None):
   global connections
@@ -127,7 +134,7 @@ async def message_handle(websocket,path):
           entry['plain'] = tuple(entry['plain'])
         success = len(connection) > 0
         if(success):
-          connections[cid]['data'] = data
+          connections[cid]['dif'] = data
           updateFile(cid)
         response = wrapResponse(cid,action,success,None)
 
@@ -147,12 +154,12 @@ def start_ui():
       scr = ui()
       while not uiLogin(scr):
         pass
-      data = connections[uiUser]['data']
       while True:
+        data = connections[uiUser]['data']
         exit = scr.update(('print', data, ch,connections[uiUser]['password']))
         if exit == None:
           break
-        data = exit
+        connections[uiUser]['dif'] = exit
         updateFile(uiUser)
         ch = scr.stdscr.getch()
     except:
