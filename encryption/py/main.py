@@ -79,7 +79,7 @@ def wrapResponse(cid,action,success,data=None):
   global connections
   key = connections.get(cid,{'key':None})['key']
   response = {"action":action,"success":success}
-  if data:
+  if data is not None:
     response['data'] = data
   return lockMessage(json.dumps(response),key)
 

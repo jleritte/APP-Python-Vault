@@ -17,6 +17,10 @@ export default class Socket {
     let message = await wrap(JSON.stringify({action,data}))
     ws.send(message)
   }
+
+  close() {
+    ws.close(1000,"Logout")
+  }
 }
 
 const wsopen = async e => {

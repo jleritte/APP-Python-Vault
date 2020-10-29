@@ -52,25 +52,27 @@ async function copyText(e) {
 	e.target.type = 'password'
 }
 
-class Login extends Div {
+export class Login extends Div {
 	constructor(parent,{onclick,onkeydown}) {
 		const contain = super(parent,{className: 'logForm standardSize'})
-		new Password(contain,{onkeydown,className: 'password',placeholder: "Password"})
+		new Input(contain,{onkeydown,className: 'uname',placeholder:'Username',value:'jokersadface'})
+		new Password(contain,{onkeydown,className: 'password',placeholder: "Password",value:'test'})
 		new Button(contain,{onclick,textContent: "Login"})
 
 		return contain
 	}
 }
 
-class ErrorDiv extends Div {
+export class ErrorDiv extends Div {
 	constructor(parent,error) {
 		const err = super(parent,{className: 'error', textContent: error})
 	}
 }
 
-class RecordButtons extends Div {
-	constructor(parent,add,edit,deleteR) {
+export class RecordButtons extends Div {
+	constructor(parent,add,edit,deleteR,logout) {
 		const buttons = super(parent,{className: 'buttons'})
+		new Button(buttons,{onclick: logout,textContent: 'Logout'})
 		new Button(buttons,{onclick: deleteR,textContent: 'Delete Record'})
 		new Button(buttons,{onclick: edit,textContent: 'Edit Record'})
 		new Button(buttons,{onclick: add,textContent: 'Add Record'})
@@ -79,7 +81,7 @@ class RecordButtons extends Div {
 	}
 }
 
-class RecordList extends Div {
+export class RecordList extends Div {
 	constructor(parent,data,onclick) {
 		const list = super(parent,{className: 'records'})
 
@@ -90,25 +92,28 @@ class RecordList extends Div {
 	}
 }
 
-class RecordHTML extends Div {
+export class RecordHTML extends Div {
 	constructor(parent,data,onclick) {
 		const record = super(parent,{className: 'record standardSize',
 												textContent: data[1][0],
 												onclick
 											})
 		record.dataset.rid = data[0]
-
 		return record
 	}
 }
 
-class EditRecordForm extends Div {
+export class EditRecordForm extends Div {
 	constructor(parent,{name,userId,password},save,cancel) {
 		const edit = super(parent,{className: 'editForm'})
 		new Div(edit,{textContent: 'Record Name',title: "Required"})
 		new Input(edit,{value: name || '', placeholder: 'Name',className: 'name'})
 		new Div(edit,{textContent: 'Password',title: "Required"})
 		new Password(edit,{value: password || '', placeholder: 'Password',className: 'password'})
+		const random = new Div(edit,{className:'random'})
+		new Div(random,{textContent:"Generate Password"})
+		new Input(random,{type:"number",value:4})
+		new Div(random,{textContent:"⚀"})
 		new Div(edit,{textContent: 'Username',title: "Optional"})
 		new Input(edit,{value: userId || '', placeholder: 'Username',className: 'userId'})
 		new Button(edit,{className: 'alt',onclick: cancel,textContent: 'Cancel'})
@@ -118,7 +123,16 @@ class EditRecordForm extends Div {
 	}
 }
 
-class Modal extends Div {
+export class Sync extends Div {
+	constructor(parent,time,onclick) {
+		const sync = super(parent,{className: 'sync',textContent: `Last synced ${time}`,
+			onclick})
+
+		return sync
+	}
+}
+
+export class Modal extends Div {
 	constructor(parent) {
 		const modal = super(parent,{className: 'modal'})
 
@@ -126,7 +140,7 @@ class Modal extends Div {
 	}
 }
 
-class DeleteConfirm extends Div {
+export class DeleteConfirm extends Div {
 	constructor(parent,name,confirm,cancel) {
 		const prompt = super(parent,{className: 'deletePrompt'})
 		new Div(prompt,{textContent: `Are you sure you want to delete ${name}?`})
@@ -136,4 +150,3 @@ class DeleteConfirm extends Div {
 		return prompt
 	}
 }
-export {Login,ErrorDiv,RecordHTML,RecordList,RecordButtons,EditRecordForm,Modal,DeleteConfirm}

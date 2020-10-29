@@ -8,6 +8,7 @@ import {
     RecordList,
     RecordButtons,
     EditRecordForm,
+    Sync,
     Modal,
     DeleteConfirm
   } from './ui.js'
@@ -18,11 +19,12 @@ const c = new CRYPTO(),
       ws = new socket(listeners),
       approot = document.body
 
-let error, logform, records, buttons, add, selected, record, edit, modal
+let error, logform, records, buttons, syncbutton, add, selected, record, edit, modal
 
 function login() {
-  const password = logform.querySelector('.password').value
-  ws.send('login',{username:'jokersadface',password})
+  const username = logform.querySelector('.uname').value,
+        password = logform.querySelector('.password').value
+  ws.send('login',{username,password})
   listeners.listen('login',async (success,data) => {
     if(success){
       await c.unlockDataKey(password, data)
@@ -33,21 +35,18 @@ function login() {
     }
   })
 }
-
 function clearError() {
   if(error) {
     remove(error,'fadeOut')
     error = undefined
   }
 }
-
 function logout() {
-
+  ws.close()
+  window.location.reload()
 }
-
 function update() {
   const out = [...data].map(([k,v]) => {return{entry:k,plain:v}})
-  console.log(out)
   ws.send('update',out)
   listeners.listen('update',async (success,data) => {
     if(success){
@@ -55,10 +54,11 @@ function update() {
     }
   })
 }
-
 function sync() {
+  if(syncbutton) syncbutton.classList.toggle('spin')
   ws.send('sync')
   listeners.listen('sync',async (success,raw) => {
+    if(syncbutton) syncbutton.classList.toggle('spin')
     if(success){
       data.clear()
       await unlockRecords(raw,data)
@@ -66,15 +66,15 @@ function sync() {
     }
   })
 }
-
 function showRecords() {
+  if(syncbutton) remove(syncbutton)
+  syncbutton = new Sync(approot,new Date().toTimeString().substring(0,8),sync)
+  buttons = buttons || new RecordButtons(approot,newRecord,editRecord,promptDelete,logout)
+  add = buttons.lastElementChild
   if(records) remove(records,'fadeOut')
   records = new RecordList(approot,data,selectRecord)
-  buttons = new RecordButtons(approot,newRecord,editRecord,promptDelete)
-  add = buttons.lastElementChild
   animate(records,'fadeIn')
 }
-
 function selectRecord(e) {
   const record = e.target
   clearError()
@@ -85,7 +85,6 @@ function selectRecord(e) {
   selected = record.dataset.rid
   record.classList.add('highlight')
 }
-
 async function editRecord(e) {
   if(!selected) {
     buttonError(e.target)
@@ -119,7 +118,6 @@ function openEditFrom(record = {}) {
 }
 async function openRecord(id) {
   const content = await unlockData(data.get(id))
-  console.log(content)
   return {name: content[0],password:content[1][0],userId: content[1][1]}
 }
 async function closeRecord([name,pass,uid]) {
@@ -152,13 +150,11 @@ function promptDelete(e) {
     new DeleteConfirm(modal,temp[0],deleteRecord,closeModal)
   }
 }
-
 function animate(node,clss) {
   node.classList.toggle(clss)
   const duration = +getComputedStyle(node).animationDuration.replace('s','') * 1000
   setTimeout(_=> node.classList.toggle(clss),duration)
 }
-
 function buttonError(target) {
   if(data.size < 1) {
     error = error ? error : new ErrorDiv(buttons, 'Please Create a Record First')
@@ -168,7 +164,6 @@ function buttonError(target) {
     animate(target,'shake')
   }
 }
-
 function remove(node,clss,follow) {
   animate(node,clss)
   let duration = +getComputedStyle(node).animationDuration.replace('s','') * 1000
@@ -177,17 +172,14 @@ function remove(node,clss,follow) {
     follow && follow()
   },duration - 50)
 }
-
 function openModal() {
   modal = new Modal(approot)
   animate(modal,'fadeIn')
 }
-
 function closeModal() {
   remove(modal,'fadeOut')
   modal = undefined
 }
-
 function init() {
   logform = new Login(approot,{onclick: login,onkeydown: clearError})
   animate(logform,'fadeIn')
