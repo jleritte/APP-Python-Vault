@@ -1,2 +1,3 @@
 *.pyc
 encryption/data/
+encryption/logs/
