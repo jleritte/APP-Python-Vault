@@ -66,6 +66,15 @@ function sync() {
     }
   })
 }
+function password() {
+  const length = edit.querySelector('[type=number]').value
+  ws.send('password',length)
+  listeners.listen('password',async (success,pass) => {
+    if(success) {
+      edit.querySelector('.password').value = pass
+    }
+  })
+}
 function showRecords() {
   if(syncbutton) remove(syncbutton)
   syncbutton = new Sync(approot,new Date().toTimeString().substring(0,8),sync)
@@ -113,7 +122,7 @@ function deleteRecord() {
 }
 function openEditFrom(record = {}) {
   if(edit) closeEditForm(0)
-  edit = new EditRecordForm(approot,record,saveRecord,closeEditForm)
+  edit = new EditRecordForm(approot,record,saveRecord,closeEditForm,password)
   animate(edit,'slideInRight')
 }
 async function openRecord(id) {
@@ -131,7 +140,7 @@ function closeEditForm(replace = true) {
   }
 }
 async function saveRecord() {
-  let temp = Array.from(edit.querySelectorAll('input')).reduce((a,v) => {
+  let temp = Array.from(edit.querySelectorAll('input:not([type=number')).reduce((a,v) => {
               a.push(v.value)
               return a
             },[])

@@ -104,7 +104,7 @@ export class RecordHTML extends Div {
 }
 
 export class EditRecordForm extends Div {
-	constructor(parent,{name,userId,password},save,cancel) {
+	constructor(parent,{name,userId,password},save,cancel,pass) {
 		const edit = super(parent,{className: 'editForm'})
 		new Div(edit,{textContent: 'Record Name',title: "Required"})
 		new Input(edit,{value: name || '', placeholder: 'Name',className: 'name'})
@@ -113,7 +113,7 @@ export class EditRecordForm extends Div {
 		const random = new Div(edit,{className:'random'})
 		new Div(random,{textContent:"Generate Password"})
 		new Input(random,{type:"number",value:4})
-		new Div(random,{textContent:"⚀"})
+		new Div(random,{textContent:"⚀",onclick:pass})
 		new Div(edit,{textContent: 'Username',title: "Optional"})
 		new Input(edit,{value: userId || '', placeholder: 'Username',className: 'userId'})
 		new Button(edit,{className: 'alt',onclick: cancel,textContent: 'Cancel'})

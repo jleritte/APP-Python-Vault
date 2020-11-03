@@ -5,7 +5,7 @@ from crypto import *
 from file_handle import *
 from ui import ui
 from datetime import datetime, date
-from logger import logger
+from generate_password import generate
 import binascii as ba
 import traceback
 import sys
@@ -16,11 +16,10 @@ import json
 ecKeys = None
 connections = {}
 uiUser = '0000'
-l = logger()
 tran_AAD = 'transmission'.encode()
 
 def uiLogin(scr):
-  global connections, l
+  global connections
   connection = {}
   username = scr.update(("name",None,None,None))
   if not username:
@@ -137,6 +136,9 @@ async def message_handle(websocket,path):
           connections[cid]['dif'] = data
           updateFile(cid)
         response = wrapResponse(cid,action,success,None)
+      if action == 'password':
+        success = True
+        response = wrapResponse(cid,action,success,generate(int(data)))
 
       if response:
         await websocket.send(response)

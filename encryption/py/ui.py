@@ -1,9 +1,6 @@
 # UI class to handle curses
 import curses
-from logger import logger
 from crypto import *
-
-log = logger()
 
 char = "none"
 pw = None
@@ -57,7 +54,6 @@ class ui:
 		curses.echo()
 		curses.nocbreak()
 		curses.endwin()
-		log.out()
 
 	def __paintBorder(self, scr):
 		scr.border(0)
