@@ -56,7 +56,7 @@ def log(mssg,out=False,error=False):
   caret = ">>" if out else "<<"
   caret = "!!" if error else caret
   message = f"{caret} {mssg} [{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}]"
-  # write_log(f'../logs/{date.today().isoformat()}_logs.txt',message)
+  write_log(f'../logs/{date.today().isoformat()}_logs.txt',message)
   print(message)
 
 def updateFile(cid):
