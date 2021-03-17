@@ -27,6 +27,7 @@ function login() {
   ws.send('login',{username,password})
   listeners.listen('login',async (success,data) => {
     if(success){
+      window.onkeydown = undefined
       await c.unlockDataKey(password, data)
       sync()
     } else {
@@ -81,7 +82,7 @@ function showRecords() {
   buttons = buttons || new RecordButtons(approot,newRecord,editRecord,promptDelete,logout)
   add = buttons.lastElementChild
   if(records) remove(records,'fadeOut')
-  records = new RecordList(approot,data,selectRecord)
+  records = new RecordList(approot,data,selectRecord,editRecord)
   animate(records,'fadeIn')
 }
 function selectRecord(e) {
@@ -95,6 +96,7 @@ function selectRecord(e) {
   record.classList.add('highlight')
 }
 async function editRecord(e) {
+  e.target.blur()
   if(!selected) {
     buttonError(e.target)
   } else {
@@ -103,7 +105,8 @@ async function editRecord(e) {
     openEditFrom(record)
   }
 }
-function newRecord() {
+function newRecord(e) {
+  e.target.blur()
   clearError()
   selected = ''
   record = undefined
@@ -112,7 +115,8 @@ function newRecord() {
   }
   openEditFrom()
 }
-function deleteRecord() {
+function deleteRecord(e) {
+  e.target.blur()
   closeModal()
   closeEditForm()
   data.delete(selected)
@@ -124,6 +128,13 @@ function openEditFrom(record = {}) {
   if(edit) closeEditForm(0)
   edit = new EditRecordForm(approot,record,saveRecord,closeEditForm,password)
   animate(edit,'slideInRight')
+  window.onkeydown = e => {
+    switch(e.code) {
+      case 'Enter':
+      case 'NumpadEnter': savedRecord(); break;
+      case 'Escape': closeEditForm(); break;
+    }
+  }
 }
 async function openRecord(id) {
   const content = await unlockData(data.get(id))
@@ -138,6 +149,7 @@ function closeEditForm(replace = true) {
     remove(edit,replace ? 'slideOutRight' : 'fadeOut')
     edit = undefined
   }
+  window.onkeydown = undefined
 }
 async function saveRecord() {
   let temp = Array.from(edit.querySelectorAll('input:not([type=number')).reduce((a,v) => {

@@ -55,8 +55,8 @@ async function copyText(e) {
 export class Login extends Div {
 	constructor(parent,{onclick,onkeydown}) {
 		const contain = super(parent,{className: 'logForm standardSize'})
-		new Input(contain,{onkeydown,className: 'uname',placeholder:'Username',value:'jokersadface'})
-		new Password(contain,{onkeydown,className: 'password',placeholder: "Password",value:'test'})
+		new Input(contain,{onkeydown,className: 'uname',placeholder:'Username',value:''})
+		new Password(contain,{onkeydown,className: 'password',placeholder: "Password",value:''})
 		new Button(contain,{onclick,textContent: "Login"})
 
 		return contain
@@ -82,21 +82,21 @@ export class RecordButtons extends Div {
 }
 
 export class RecordList extends Div {
-	constructor(parent,data,onclick) {
+	constructor(parent,data,onclick,ondblclick) {
 		const list = super(parent,{className: 'records'})
 
 		for (const record of data) {
-			new RecordHTML(list,record,onclick)
+			new RecordHTML(list,record,onclick,ondblclick)
 		}
 		return list
 	}
 }
 
 export class RecordHTML extends Div {
-	constructor(parent,data,onclick) {
+	constructor(parent,data,onclick,ondblclick) {
 		const record = super(parent,{className: 'record standardSize',
 												textContent: data[1][0],
-												onclick
+												onclick, ondblclick
 											})
 		record.dataset.rid = data[0]
 		return record
@@ -113,7 +113,7 @@ export class EditRecordForm extends Div {
 		const random = new Div(edit,{className:'random'})
 		new Div(random,{textContent:"Generate Password"})
 		new Input(random,{type:"number",value:4})
-		new Div(random,{textContent:"⚀",onclick:pass})
+		new Button(random,{textContent:"⚀",onclick:pass})
 		new Div(edit,{textContent: 'Username',title: "Optional"})
 		new Input(edit,{value: userId || '', placeholder: 'Username',className: 'userId'})
 		new Button(edit,{className: 'alt',onclick: cancel,textContent: 'Cancel'})
