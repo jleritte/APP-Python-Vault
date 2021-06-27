@@ -8,11 +8,11 @@ export function decode(uint8array = new Uint8Array()) {
 }
 
 export function fromHexString(hexString){
-  return new Uint8Array(hexString.match(/.{2}/g).map(byte => parseInt(byte, 16)))
+  return new Uint8Array(hexString.match(/.{2}/g).map(B => parseInt(B, 16)))
 }
 
 export function toHexString(bytes){
-  return bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '')
+  return bytes.reduce((str, B) => str + B.toString(16).padStart(2, '0'), '')
 }
 
 export function toBase64(bytes) {

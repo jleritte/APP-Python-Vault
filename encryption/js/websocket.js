@@ -1,5 +1,4 @@
-import {wrap, unwrap, setServerPubKey, exportPublicKey} from './crypto.js'
-import {encode,decode,fromHexString,toHexString} from './utils.js'
+import { wrap, unwrap, setServerPubKey, exportPublicKey } from './crypto.js'
 
 let ws, emitter
 
@@ -26,7 +25,7 @@ export default class Socket {
 const wsopen = async _ => {
   console.log('Connected')
   const key = await exportPublicKey()
-  ws.send(JSON.stringify({action:"key",data:key}))
+  ws.send(JSON.stringify({action:"key", data:key}))
 }
 const wsclose = e => {
   if(e.wasClean) {

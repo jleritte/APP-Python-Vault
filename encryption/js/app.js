@@ -18,7 +18,8 @@ const c = new CRYPTO(),
       ws = new socket(listeners),
       approot = document.body
 
-let error, logform, records, buttons, syncbutton, add, selected, record, edit, modal
+let error, logform, records, buttons, syncbutton, add,
+    selected, record, edit, modal
 
 function login() {
   const username = logform.querySelector('.uname').value,
@@ -53,19 +54,19 @@ function update() {
 function sync() {
   if(syncbutton) syncbutton.classList.toggle('spin')
   ws.send('sync')
-  listeners.listen('sync', async (success,raw) => {
+  listeners.listen('sync', async (success, raw) => {
     if(syncbutton) syncbutton.classList.toggle('spin')
     if(success){
       data.clear()
-      await c.unlockRecords(raw,data)
-      remove(logform,'fadeOut',showRecords)
+      await c.unlockRecords(raw, data)
+      remove(logform, 'fadeOut', showRecords)
     }
   })
 }
 function password() {
   const length = edit.querySelector('[type=number]').value
   ws.send('password', length)
-  listeners.listen('password', async (success,pass) => {
+  listeners.listen('password', async (success, pass) => {
     if(success) {
       edit.querySelector('.password').value = pass
     }
@@ -73,8 +74,10 @@ function password() {
 }
 function showRecords() {
   if(syncbutton) remove(syncbutton)
-  syncbutton = new Sync(approot, new Date().toTimeString().substring(0,8), sync)
-  buttons = buttons ?? new RecordButtons(approot, newRecord, editRecord, promptDelete, logout)
+  const now = new Date().toTimeString().substring(0, 8)
+  syncbutton = new Sync(approot, now, sync)
+  buttons = buttons ?? new RecordButtons(approot, newRecord,
+              editRecord, promptDelete, logout)
   add = buttons.lastElementChild
   if(records) remove(records, 'fadeOut')
   records = new RecordList(approot, data, selectRecord, editRecord)
@@ -119,9 +122,10 @@ function deleteRecord(e) {
   selected = undefined
   record = undefined
 }
-function openEditFrom(record = {}) {
+function openEditFrom(record={}) {
   if(edit) closeEditForm(0)
-  edit = new EditRecordForm(approot, record, saveRecord, closeEditForm, password)
+  edit = new EditRecordForm(approot, record,
+                saveRecord, closeEditForm, password)
   animate(edit, 'slideInRight')
   window.onkeydown = e => {
     switch(e.code) {
@@ -139,7 +143,7 @@ async function closeRecord([name, pass, uid]) {
   const content = await c.lockData([name, [pass, uid]])
   return content
 }
-function closeEditForm(replace = true) {
+function closeEditForm(replace=true) {
   if(edit) {
     remove(edit, replace ? 'slideOutRight' : 'fadeOut')
     edit = undefined
@@ -147,10 +151,11 @@ function closeEditForm(replace = true) {
   window.onkeydown = undefined
 }
 async function saveRecord() {
-  let temp = Array.from(edit.querySelectorAll('input:not([type=number')).reduce((a,v) => {
-              a.push(v.value)
-              return a
-            },[])
+  let temp = Array.from(edit.querySelectorAll('input:not([type=number'))
+        .reduce((a, v) => {
+          a.push(v.value)
+          return a
+        },[])
   record = await closeRecord(temp)
   data.set(selected, record)
   update()
@@ -168,8 +173,8 @@ function promptDelete(e) {
 }
 function animate(node, clss) {
   node.classList.toggle(clss)
-  const duration = +getComputedStyle(node).animationDuration.replace('s','') * 1000
-  setTimeout(_ => node.classList.toggle(clss), duration)
+  const duration = +getComputedStyle(node).animationDuration.replace('s', '')
+  setTimeout(_ => node.classList.toggle(clss), duration *1000)
 }
 function buttonError(target) {
   if(data.size < 1) {
@@ -182,11 +187,11 @@ function buttonError(target) {
 }
 function remove(node, clss, follow) {
   animate(node, clss)
-  let duration = +getComputedStyle(node).animationDuration.replace('s', '') * 1000
+  let duration = +getComputedStyle(node).animationDuration.replace('s', '')
   setTimeout(_ => {
     node.remove()
     follow && follow()
-  }, duration - 50)
+  }, duration * 1000 - 50)
 }
 function openModal() {
   modal = new Modal(approot)

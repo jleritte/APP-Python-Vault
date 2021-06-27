@@ -11,9 +11,7 @@ class Element {
 
 class Div extends Element{
   constructor(parent,options = {}) {
-    const div = super(parent,'div',options)
-
-    return div
+    return super(parent,'div',options)
   }
 }
 
@@ -31,8 +29,7 @@ class Button extends Element {
 
 class Input extends Element {
   constructor(parent,options = {}) {
-    const input = super(parent,'input',options)
-    return input
+    return super(parent,'input',options)
   }
 }
 
@@ -54,10 +51,15 @@ async function copyText(e) {
 
 export class Login extends Div {
   constructor(parent, {onclick, onkeydown}) {
-    const contain = super(parent, {className: 'logForm standardSize'})
-    new Input(contain, {onkeydown, className: 'uname', placeholder:'Username',value:''})
-    new Password(contain,{onkeydown,className: 'password',placeholder: "Password",value:''})
-    new Button(contain,{onclick,textContent: "Login"})
+    const contain = super(parent, {className: 'logForm standardSize'}),
+        inputOptions = {onkeydown, value:''}
+    inputOptions.className = 'uname'
+    inputOptions.placeholder = 'Username'
+    new Input(contain, inputOptions)
+    inputOptions.className = 'password'
+    inputOptions.placeholder = 'Password'
+    new Password(contain, inputOptions)
+    new Button(contain,{onclick, textContent: "Login"})
 
     return contain
   }
@@ -94,10 +96,12 @@ export class RecordList extends Div {
 
 class RecordHTML extends Div {
   constructor(parent,data,onclick,ondblclick) {
-    const record = super(parent,{className: 'record standardSize',
-                        textContent: data[1][0],
-                        onclick, ondblclick
-                      })
+    const options = {
+        className: 'record standardSize',
+        textContent: data[1][0],
+        onclick, ondblclick
+      },
+      record = super(parent, options)
     record.dataset.rid = data[0]
     return record
   }
@@ -125,18 +129,17 @@ export class EditRecordForm extends Div {
 
 export class Sync extends Div {
   constructor(parent,time,onclick) {
-    const sync = super(parent,{className: 'sync',textContent: `Last synced ${time}`,
-      onclick})
-
-    return sync
+    return super(parent,{
+      className: 'sync',
+      textContent: `Last synced ${time}`,
+      onclick
+    })
   }
 }
 
 export class Modal extends Div {
   constructor(parent) {
-    const modal = super(parent,{className: 'modal'})
-
-    return modal
+    return super(parent,{className: 'modal'})
   }
 }
 
