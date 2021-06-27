@@ -18,7 +18,6 @@ import websockets
 import json
 
 sessions = {}
-uiUser = '0000'
 tran_AAD = 'transmission'.encode()
 
 

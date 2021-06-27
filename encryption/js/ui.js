@@ -1,5 +1,5 @@
 class Element {
-  constructor(parent,type, options) {
+  constructor(parent, type, options) {
     const ele = document.createElement(type)
     for(const key in options) {
       ele[key] = options[key]
@@ -48,14 +48,14 @@ class Password extends Input {
 async function copyText(e) {
   e.target.type = 'input'
   e.target.select()
-  await document.execCommand('copy')
+  document.execCommand('copy')
   e.target.type = 'password'
 }
 
 export class Login extends Div {
-  constructor(parent,{onclick,onkeydown}) {
-    const contain = super(parent,{className: 'logForm standardSize'})
-    new Input(contain,{onkeydown,className: 'uname',placeholder:'Username',value:''})
+  constructor(parent, {onclick, onkeydown}) {
+    const contain = super(parent, {className: 'logForm standardSize'})
+    new Input(contain, {onkeydown, className: 'uname', placeholder:'Username',value:''})
     new Password(contain,{onkeydown,className: 'password',placeholder: "Password",value:''})
     new Button(contain,{onclick,textContent: "Login"})
 
@@ -65,7 +65,7 @@ export class Login extends Div {
 
 export class ErrorDiv extends Div {
   constructor(parent,error) {
-    const err = super(parent,{className: 'error', textContent: error})
+    return super(parent,{className: 'error', textContent: error})
   }
 }
 
@@ -92,7 +92,7 @@ export class RecordList extends Div {
   }
 }
 
-export class RecordHTML extends Div {
+class RecordHTML extends Div {
   constructor(parent,data,onclick,ondblclick) {
     const record = super(parent,{className: 'record standardSize',
                         textContent: data[1][0],

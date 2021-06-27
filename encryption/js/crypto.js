@@ -1,12 +1,20 @@
 //Crypto Object to make usage of WebCrypto less verbose
-import {encode,decode,toHexString,fromHexString,toBase64,fromBase64} from './utils.js'
+import {
+    encode,
+    decode,
+    toHexString,
+    fromHexString,
+    toBase64,
+    fromBase64,
+    toTuple,
+    fromTuple
+  } from './utils.js'
 
 const c = crypto,
       s = c.subtle,
       tranAad = encode('transmission')
 
-
-let ecKey, dataKey, passbytes, serverPubKey, currentPubKey
+let ecKey, dataKey, passbytes, serverPubKey
 
 export default class CRYPTO {
   constructor() {
@@ -14,11 +22,14 @@ export default class CRYPTO {
   }
 
   async generateECKeyPair() {
-    let keyPair = await s.generateKey({name:"ECDH",namedCurve:"P-256"},true,['deriveKey'])
+    let keyPair = await s.generateKey({
+        name:"ECDH",
+        namedCurve:"P-256"
+      },true,['deriveKey'])
     return keyPair
   }
 
-  async unlockDataKey(passphrase,data) {
+  async unlockDataKey(passphrase, data) {
     data = fromHexString(data)
     passbytes = encode(passphrase)
     let passKey = await deriveKey(data.slice(0,16)),
@@ -29,13 +40,35 @@ export default class CRYPTO {
       false,
       ['encrypt','decrypt'])
   }
+
+  async unlockRecords(data,records) {
+    for(const record of data) {
+      let plain = await decrypt(fromHexString(record))
+      plain = fromTuple(decode(plain))
+      records.set(record,JSON.parse(plain))
+    }
+  }
+
+  async unlockData([name,data]) {
+    const key = await deriveKey(passbytes,encode(name))
+    data = await decrypt(fromHexString(data),key,encode(''))
+    data = fromTuple(decode(data))
+    return [name,JSON.parse(data)]
+  }
+
+  async lockData([name,data]) {
+    const key = await deriveKey(passbytes,encode(name))
+    data = toTuple(JSON.stringify(data))
+    data = await encrypt(encode(data),key,encode(''))
+    return [name,toHexString(data)]
+  }
 }
 
 function random(size = 1) {
   return c.getRandomValues(new Uint8Array(size))
 }
 
-async function encrypt(data,key = dataKey,aad = passbytes) {
+async function encrypt(data, key = dataKey, aad = passbytes) {
   if(typeof data === 'string') data = encode(data)
   let iv = random(12),
     ciphertext = await s.encrypt({
@@ -47,7 +80,7 @@ async function encrypt(data,key = dataKey,aad = passbytes) {
   return cipherblock
 }
 
-async function decrypt(data,key = dataKey, aad = passbytes) {
+async function decrypt(data, key = dataKey, aad = passbytes) {
   let iv = data.slice(0,12),
     plaintext = await s.decrypt({
       name: 'AES-GCM',
@@ -74,7 +107,7 @@ async function deriveKey(salt, pass=passbytes) {
   return passKey
 }
 
-async function createExchangeKey(privateKey = ecKey.privateKey,publicKey = serverPubKey) {
+async function createExchangeKey(privateKey = ecKey.privateKey, publicKey = serverPubKey) {
   let sharedKey = await s.deriveKey({name: "ECDH", public: publicKey},
     privateKey,
     {name: "AES-GCM", length: 256},
@@ -117,27 +150,4 @@ export async function unwrap(data) {
     data = decode(await decrypt(fromHexString(data),tranKey,tranAad))
   }
   return data
-}
-
-export async function unlockRecords(data,records) {
-  for(const record of data) {
-    let plain = await decrypt(fromHexString(record))
-    plain = decode(plain).replace(/\(/,'[').replace(/\)/,']').replace(/'/g,'"')
-    records.set(record,JSON.parse(plain))
-  }
-}
-
-
-export async function unlockData([name,data]) {
-  const key = await deriveKey(passbytes,encode(name))
-  data = await decrypt(fromHexString(data),key,encode(''))
-  data = decode(data).replace(/\(/,'[').replace(/\)/,']').replace(/'/g,'"')
-  return [name,JSON.parse(data)]
-}
-
-export async function lockData([name,data]) {
-  const key = await deriveKey(passbytes,encode(name))
-  data = JSON.stringify(data).replace(/\[/,'(').replace(/\]/,')').replace(/'/g,'"')
-  data = await encrypt(encode(data),key,encode(''))
-  return [name,toHexString(data)]
 }

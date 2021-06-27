@@ -8,7 +8,7 @@ export function decode(uint8array = new Uint8Array()) {
 }
 
 export function fromHexString(hexString){
-  return new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)))
+  return new Uint8Array(hexString.match(/.{2}/g).map(byte => parseInt(byte, 16)))
 }
 
 export function toHexString(bytes){
@@ -21,4 +21,12 @@ export function toBase64(bytes) {
 
 export function fromBase64(string) {
   return new Uint8Array(atob(string).split("").map(ch => ch.charCodeAt(0)))
+}
+
+export function toTuple(string) {
+  return string.replace(/\[/, '(').replace(/\]/, ')').replace(/'/g, '"')
+}
+
+export function fromTuple(string) {
+  return string.replace(/\(/, '[').replace(/\)/, ']').replace(/'/g, '"')
 }
