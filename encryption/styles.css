@@ -91,23 +91,19 @@ div {
 
 .record {
 	background: var(--lightest);
+	overflow: hidden;
 }
 .record:after{
 	content: "";
-	height: 100%;
-	width: 100%;
-	display: block;
+	inset: 0;
 	position: absolute;
 	background: var(--darkest);
 	pointer-events: none;
-	border: 1px solid black;
-	border-radius: 4px;
-	top: -1px;
-	left: -1px;
 	opacity: 0.3;
 	transition: opacity 0.3s;
 }
 
+.record:hover:after,
 .highlight:after {
 	opacity: 0;
 }
