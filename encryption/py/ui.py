@@ -124,7 +124,6 @@ class ui:
         text = ''.join(strng)
       scr.addstr(pos[0], pos[1], text)
       ch = scr.getch()
-      scr.addstr(self.size[0]-2,self.size[1]-4,str(ch))
       if ch == 10:
         break
       elif ch == 27:
@@ -169,7 +168,7 @@ class ui:
     global char
     char = str(ch)
     action, record = self.__selected
-    x, y = self.__size
+    x, y = self.size
     lgth = len(data)
     if ch == 27:  # Esc
       return None

@@ -32,8 +32,7 @@ def uiLogin(scr):
   if password is None:
     return False
   user['password'] = password.encode()
-  sessions[uiUser] = user
-  return user if login(user) else False
+  return user if login(user) else None
 
 
 def login(user):
@@ -172,14 +171,14 @@ async def message_handle(websocket, path):
 
 
 def start_ui():
+  user = None
   try:
     ch = None
     scr = ui()
-    user = None
-    while not user:
+    while user is None:
       user = uiLogin(scr)
       pass
-    while True:
+    while user:
       data = user['data']
       exit = scr.update(('print', data, ch, user['password']))
       if exit is None:
