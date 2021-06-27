@@ -10,15 +10,15 @@ def generate(count):
   password = ''
   for x in range(count):
     key = ''.join([random.choice('123456') for x in range(5)])
-    word = encode_to_Dvorak(words[key])
+    word = words[key]
     if random.choice([True, False]):
       word = word.capitalize()
-    password += word + random.choices(delims, weights=delim_weights, k=1)[0]
+    password += encode_to_Dvorak(word) + random.choices(delims, weights=delim_weights, k=1)[0]
   return password
 
 
-qwerty = "qwertyuiopasdfghjklzxcvbnm"
-dvorak = "',.pyfgcrlaoeuidhtn;qjkxbm"
+qwerty = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM"
+dvorak = "',.pyfgcrlaoeuidhtn;qjkxbm\"<>PYFGCRLAOEUIDHTN:QJKXBM"
 
 
 def encode_to_Dvorak(word):
