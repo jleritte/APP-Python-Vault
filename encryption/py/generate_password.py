@@ -16,3 +16,6 @@ def generate(count):
     password += word + \
       random.choices(delims, weights=delim_weights, k=1)[0]
   return password
+
+
+## TODO: Add Dvorak encoding to passwords for extra protection

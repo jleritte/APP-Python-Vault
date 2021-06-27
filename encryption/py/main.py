@@ -23,18 +23,17 @@ tran_AAD = 'transmission'.encode()
 
 
 def uiLogin(scr):
-  global sessions
-  session = {}
+  user = {}
   username = scr.update(("name", None, None, None))
   if username is None:
     return False
-  session['filename'] = f'../data/{username}.hex'
+  user['filename'] = f'../data/{username}.hex'
   password = scr.update(("pass", None, None, None))
   if password is None:
     return False
-  session['password'] = password.encode()
-  sessions[uiUser] = session
-  return login(uiUser)
+  user['password'] = password.encode()
+  sessions[uiUser] = user
+  return user if login(user) else False
 
 
 def login(user):
@@ -173,19 +172,20 @@ async def message_handle(websocket, path):
 
 
 def start_ui():
-  global sessions
   try:
     ch = None
     scr = ui()
-    while not uiLogin(scr):
+    user = None
+    while not user:
+      user = uiLogin(scr)
       pass
     while True:
-      data = sessions[uiUser]['data']
-      exit = scr.update(('print', data, ch, sessions[uiUser]['password']))
+      data = user['data']
+      exit = scr.update(('print', data, ch, user['password']))
       if exit is None:
         break
-      sessions[uiUser]['dif'] = exit
-      updateFile(uiUser)
+      user['dif'] = exit
+      updateFile(user)
       ch = scr.stdscr.getch()
   except:
     scr.tearDown()
