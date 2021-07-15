@@ -30,3 +30,11 @@ export function toTuple(string) {
 export function fromTuple(string) {
   return string.replace(/\(/, '[').replace(/\)/, ']').replace(/'/g, '"')
 }
+
+export async function copyText(e) {
+  e.target.type = 'input'
+  e.target.select()
+  document.execCommand('copy')
+  e.target.type = 'password'
+}
+

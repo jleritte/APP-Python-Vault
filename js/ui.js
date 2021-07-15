@@ -1,3 +1,5 @@
+import { copyText } from 'utils.js'
+
 class Element {
   constructor(parent, type, options) {
     const ele = document.createElement(type)
@@ -40,13 +42,6 @@ class Password extends Input {
     pass.ondblclick = copyText
     return pass
   }
-}
-
-async function copyText(e) {
-  e.target.type = 'input'
-  e.target.select()
-  document.execCommand('copy')
-  e.target.type = 'password'
 }
 
 export class Login extends Div {
