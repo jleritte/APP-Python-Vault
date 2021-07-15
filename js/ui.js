@@ -1,4 +1,4 @@
-import { copyText } from 'utils.js'
+import { copyText } from './utils.js'
 
 class Element {
   constructor(parent, type, options) {
