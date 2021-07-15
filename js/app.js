@@ -49,7 +49,7 @@ function logout() {
 function update() {
   const out = [...data].map(([k, v]) => {return {entry:k, plain:v}})
   ws.send('update',out)
-  listeners.listen('update', async success => success || sync())
+  listeners.listen('update', success => success && sync())
 }
 function sync() {
   if(syncbutton) syncbutton.classList.toggle('spin')
