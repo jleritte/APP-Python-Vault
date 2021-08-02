@@ -114,9 +114,3 @@ class XChaCha20 {
     return array instanceof Uint8Array
   }
 }
-
-let key = encode('abcdefghijklmnopqrstuvwxyz123456')
-let chacha = new XChaCha20()
-let text = 'test this really long string to make sure you keep making keystream correctly'
-let cipher = chacha.encrypt(key, text)
-//chacha.encrypt(cipher)
