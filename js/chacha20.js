@@ -38,7 +38,7 @@ class ChaCha20 {
   }
   #xchacha(key, nonce, data) {
     const subKey = this.#hchacha(key, iv.subarray(0,16))
-    this.#createBlock(key,new Uint8Array([...this.#nulls,...iv.subarray(16)]))
+    this.#createBlock(subKey,new Uint8Array([...this.#nulls,...iv.subarray(16)]))
     return this.#processData(data)
   }
   #createBlock(key,nonce) {
