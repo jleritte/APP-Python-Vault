@@ -1,7 +1,7 @@
 'use strict'
 import { encode, decode, fromHexString, toHexString } from './utils.js'
 
-function getRandomValues(size=24) {
+function getRandomValues(size = 24) {
   return crypto.getRandomValues(new Uint8Array(size))
 }
 
@@ -21,8 +21,8 @@ function rotl(word, shift) {
 
 
 const cols = [[0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15]],
-      diags = [[0, 5, 10, 15], [1, 6, 11, 12], [2, 7, 8, 13], [3, 4, 9, 14]],
-      nulls = [0x00, 0x00, 0x00, 0x00]
+  diags = [[0, 5, 10, 15], [1, 6, 11, 12], [2, 7, 8, 13], [3, 4, 9, 14]],
+  nulls = [0x00, 0x00, 0x00, 0x00]
 
 class XChaCha20 {
   #consts = encode("expand 32-byte k")
@@ -30,18 +30,18 @@ class XChaCha20 {
   #block = []
   #rounds = 10
 
-  encrypt(key, plaintext="") {
+  encrypt(key, plaintext = "") {
     const iv = getRandomValues(24),
       cipher = this.#xchacha(key, iv, encode(plaintext))
     return `0x${toHexString([...iv, ...cipher])}`
   }
-  decrypt(key, ciphertext='0x') {
+  decrypt(key, ciphertext = '0x') {
     const bytes = fromHexString(ciphertext.substr(2)),
       plain = this.#xchacha(key, bytes.subarray(0, 24), bytes.subarray(24))
     return decode(plain)
   }
   #xchacha(key, iv, data) {
-    if(!this.#arrayCheck(key) || key.length !== 32) {
+    if (!this.#arrayCheck(key) || key.length !== 32) {
       throw new Error('Key should be a 32 byte array!')
     }
     const subKey = this.#hchacha(key, iv.subarray(0, 16))
@@ -51,12 +51,11 @@ class XChaCha20 {
   #hchacha(key, nonce) {
     this.#createBlock(key, nonce)
     const subKey = this.#keystream.reduce((acc, _, i) => {
-      if(i < 16 || i > 47)
-      return acc
-    },[])
+      if (i < 16 || i > 47) return acc
+    }, [])
     return new Uint8Array(subKey)
   }
-  #createBlock(key,nonce) {
+  #createBlock(key, nonce) {
     this.#block.length = 0
     this.#processStateChunk(this.#consts)
     this.#processStateChunk(key)
@@ -65,13 +64,13 @@ class XChaCha20 {
   }
   #processStateChunk(chunk) {
     const len = chunk.length
-    for(let i = 0; i < len; i += 4) {
+    for (let i = 0; i < len; i += 4) {
       this.#block.push(getWord(chunk.subarray(i, i + 4)))
     }
   }
   #processData(bytes) {
     return bytes.map(B => {
-      if(this.#keystream.length === 0) {
+      if (this.#keystream.length === 0) {
         this.#block[12]++
         this.#createStream()
       }
@@ -82,20 +81,20 @@ class XChaCha20 {
     this.#keystream.length = 0
     const copy = [...this.#block]
 
-    while(this.#rounds--) {
+    while (this.#rounds--) {
       this.#doubleRound(copy)
     }
     this.#rounds = 10
-    for(let i = 0; i < copy.length; i++) {
+    for (let i = 0; i < copy.length; i++) {
       copy[i] += this.#block[i]
       this.#keystream.push(...getBytes(copy[i]))
     }
   }
   #doubleRound(block) {
-    for(let col of cols) {
+    for (let col of cols) {
       this.#quarterround(block, ...col)
     }
-    for(let diag of diags) {
+    for (let diag of diags) {
       this.#quarterround(block, ...diag)
     }
   }
