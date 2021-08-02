@@ -37,8 +37,8 @@ class ChaCha20 {
     return new Uint8Array(subKey)
   }
   #xchacha(key, nonce, data) {
-    const subKey = this.#hchacha(key, iv.subarray(0,16))
-    this.#createBlock(subKey,new Uint8Array([...this.#nulls,...iv.subarray(16)]))
+    const subKey = this.#hchacha(key, nonce.subarray(0,16))
+    this.#createBlock(subKey,new Uint8Array([0,...this.#nulls,...nonce.subarray(16)]))
     return this.#processData(data)
   }
   #createBlock(key,nonce) {
@@ -112,8 +112,6 @@ class ChaCha20 {
 }
 
 let key = encode('abcdefghijklmnopqrstuvwxyz123456')
-let iv = new Uint8Array([0x00,0x00,0x00,0x00,...getRandomValues(12)])
-// console.log(toHexString(iv))
 let chacha = new ChaCha20()
 let text = 'test this really long string to make sure you keep making keystream correctly'
 let cipher = chacha.encrypt(key, text)
