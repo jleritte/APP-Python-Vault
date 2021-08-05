@@ -22,10 +22,10 @@ function rotl(word, shift) {
 
 const cols = [[0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15]],
   diags = [[0, 5, 10, 15], [1, 6, 11, 12], [2, 7, 8, 13], [3, 4, 9, 14]],
-  nulls = [0x00, 0x00, 0x00, 0x00]
+  nulls = [0x00, 0x00, 0x00, 0x00],
+  consts = encode("expand 32-byte k")
 
 class XChaCha20 {
-  #consts = encode("expand 32-byte k")
   #keystream = []
   #block = []
   #rounds = 10
@@ -57,7 +57,7 @@ class XChaCha20 {
   }
   #createBlock(key, nonce) {
     this.#block.length = 0
-    this.#processStateChunk(this.#consts)
+    this.#processStateChunk(consts)
     this.#processStateChunk(key)
     this.#processStateChunk(nonce)
     this.#createStream()
