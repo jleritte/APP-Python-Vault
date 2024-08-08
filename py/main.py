@@ -1,6 +1,7 @@
-# https://diceware.dmuth.org/
+#! /usr/bin/python3
 
-# Main Loop
+# https://diceware.dmuth.org/
+from typing import Any, Optional, Dict, ByteString, Union
 from crypto import decrypt, encrypt, unlock_record, lock_record
 from crypto import generate_key_pair, export_public_key, import_public_key
 from crypto import derive_key, get_shared_key
@@ -17,13 +18,13 @@ import asyncio
 import websockets
 import json
 
-sessions = {}
-tran_AAD = 'transmission'.encode()
+sessions: Dict[str, Any] = {}
+tran_AAD: ByteString = 'transmission'.encode()
 
 
-def uiLogin(scr):
-  user = {}
-  username = scr.update(("name", None, None, None))
+def uiLogin(scr: ui) -> Union[bool, Dict[str, Any], None]:
+  user: Dict[str, Any] = {}
+  username: Optional[str] = scr.update(("name", None, None, None))
   if username is None:
     return False
   user['filename'] = f'../data/{username}.hex'
@@ -40,7 +41,7 @@ def login(user):
 
   data = parse_file(file)
   salt, passKey = derive_key(
-    password, data[0]['salt'] if len(data) else None)
+      password, data[0]['salt'] if len(data) else None)
 
   if len(data):
     key = decrypt(passKey, data[0]['key'], password)
@@ -48,8 +49,8 @@ def login(user):
       return False
     data = [unlock_record(key, password, item) for item in data[1:]]
   else:
-    key = urandom(int(256/8))
-    entry = {"cipher": salt+encrypt(passKey, key, password), "entry": ''}
+    key = urandom(int(256 / 8))
+    entry = {"cipher": salt + encrypt(passKey, key, password), "entry": ''}
     store_entry(file, entry)
   user['dkey'] = key
   user['data'] = data
@@ -118,9 +119,10 @@ def generate_session_key(session):
   return keys.public_key()
 
 
-async def message_handle(websocket, path):
+async def message_handle(websocket, path) -> None:
+  print(type(websocket))
   global sessions
-  sid = f"{websocket.remote_address[1]}"
+  sid: str = f"{websocket.remote_address[1]}"
   session = sessions.get(sid, {})
   log(f"{websocket.remote_address[0]} Connected with id {sid}", 1)
   sessions[sid] = session
@@ -140,11 +142,11 @@ async def message_handle(websocket, path):
         session['filename'] = f'../data/{data["username"]}.hex'
         success = login(session)
         response = wrapResponse(session, action, success, read_raw(
-          session['filename'])[0] if success else None)
+            session['filename'])[0] if success else None)
       if action == 'sync':
         success = len(session) > 0
         response = wrapResponse(session, action, success, read_raw(
-          session['filename'])[1:] if success else None)
+            session['filename'])[1:] if success else None)
       if action == 'update':
         for entry in data:
           entry['plain'] = tuple(entry['plain'])
@@ -169,17 +171,17 @@ async def message_handle(websocket, path):
     sessions.pop(sid, None)
 
 
-def start_ui():
-  user = None
+def start_ui() -> None:
+  user: Optional[Dict[str, Any]] = None
   try:
-    ch = None
-    scr = ui()
+    ch: Optional[int] = None
+    scr: ui = ui()
     while user is None:
       user = uiLogin(scr)
       pass
     while user:
-      data = user['data']
-      exit = scr.update(('print', data, ch, user['password']))
+      data: Dict[str, Any] = user['data']
+      exit: Optional[str] = scr.update(('print', data, ch, user['password']))
       if exit is None:
         break
       user['dif'] = exit
@@ -192,15 +194,17 @@ def start_ui():
     scr.tearDown()
 
 
-def start_server():
+def start_server() -> None:
   server = websockets.serve(message_handle, "localhost", 9002)
   # server = websockets.serve(message_handle, "192.168.51.111", 9002)
   print('Starting Server')
+  # loop = asyncio.new_event_loop()
+  # asyncio.set_event_loop(loop)
   asyncio.get_event_loop().run_until_complete(server)
   asyncio.get_event_loop().run_forever()
 
 
-def main():
+def main() -> None:
   if len(sys.argv) == 1:
     start_ui()
   elif sys.argv[1] == '-s':
@@ -209,4 +213,5 @@ def main():
     print(f'{sys.argv[1]} not supported')
 
 
-main()
+if __name__ == "__main__":
+  main()

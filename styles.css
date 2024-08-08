@@ -116,7 +116,8 @@ div {
 	justify-content: flex-start;
 }
 
-.buttons > button {
+.buttons > button,
+.buttons > input {
 	margin: 5px 0;
 	height: 16.5%;
 }

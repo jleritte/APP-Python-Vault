@@ -18,8 +18,25 @@ const c = new CRYPTO(),
       ws = new socket(listeners),
       approot = document.body
 
-let error, logform, records, buttons, syncbutton, add,
+let filterString = "", synced, error, logform, records, buttons, syncbutton, add,
     selected, record, edit, modal
+
+function fuzzyMatchSimple(pattern, str) {
+  let patternIdx = 0, strIdx = 0
+  const patternLength = pattern.length,
+        strLength = str.length
+
+  while (patternIdx != patternLength && strIdx != strLength) {
+    const patternChar = pattern.charAt(patternIdx).toLowerCase()
+    const strChar = str.charAt(strIdx).toLowerCase()
+    if (patternChar == strChar) ++patternIdx
+    ++strIdx
+  }
+
+  return patternLength != 0 && strLength != 0 && patternIdx == patternLength
+    ? true
+    : false
+}
 
 function login() {
   const username = logform.querySelector('.uname').value,
@@ -60,6 +77,7 @@ function sync() {
       data.clear()
       await c.unlockRecords(raw, data)
       remove(logform, 'fadeOut', showRecords)
+      synced = new Date().toTimeString().substring(0, 8)
     }
   })
 }
@@ -74,13 +92,13 @@ function password() {
 }
 function showRecords() {
   if(syncbutton) remove(syncbutton)
-  const now = new Date().toTimeString().substring(0, 8)
-  syncbutton = new Sync(approot, now, sync)
+  const shown = new Map([...data].filter(([k,v]) => fuzzyMatchSimple(filterString || v[0], v[0])))
+  syncbutton = new Sync(approot, synced, sync)
   buttons = buttons ?? new RecordButtons(approot, newRecord,
-              editRecord, promptDelete, logout)
+              editRecord, promptDelete, logout, updateSearch)
   add = buttons.lastElementChild
   if(records) remove(records, 'fadeOut')
-  records = new RecordList(approot, data, selectRecord, editRecord)
+  records = new RecordList(approot, shown, selectRecord, editRecord)
   animate(records, 'fadeIn')
 }
 function selectRecord(e) {
@@ -121,6 +139,11 @@ function deleteRecord(e) {
   update()
   selected = undefined
   record = undefined
+}
+function updateSearch(e) {
+  closeEditForm()
+  filterString = e.target.value || ""
+  showRecords()
 }
 function openEditFrom(record={}) {
   if(edit) closeEditForm(0)

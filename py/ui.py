@@ -16,11 +16,11 @@ class ui:
   __menuText = ['New Record', 'Edit Record', 'Delete Record']
   __selected = (0, 0)
 
-  def __init__(self):
+  def __init__(self) -> None:
     self.stdscr = curses.initscr()
     curses.noecho()
     curses.cbreak()
-    self.stdscr.keypad(1)
+    self.stdscr.keypad(True)
     self.size = self.stdscr.getmaxyx()
     self.col = int(self.size[1] / 5)
     self.__paintBorder(self.stdscr)
@@ -33,10 +33,13 @@ class ui:
       pw = pword
 
     if action == 'name':
-      return self.__textEntry(self.stdscr, self.__printPrompt(self.stdscr, pos, 0))
+      return self.__textEntry(self.stdscr,
+                              self.__printPrompt(self.stdscr, pos, 0))
     elif action == 'pass':
       x, y = pos
-      return self.__textEntry(self.stdscr, self.__printPrompt(self.stdscr, (x+1, y), 1), mask='*')
+      return self.__textEntry(self.stdscr,
+                              self.__printPrompt(self.stdscr, (x + 1, y), 1),
+                              mask='*')
     elif action == 'print':
       if ch is None:
         self.__quitText = ''.join([self.__addToQuit, self.__quitText])
@@ -57,8 +60,8 @@ class ui:
 
   def __paintBorder(self, scr):
     scr.border(0)
-    x = self.size[0]-1
-    y = int(self.size[1]/2 - len(self.__quitText)/2)
+    x = self.size[0] - 1
+    y = int(self.size[1] / 2 - len(self.__quitText) / 2)
     scr.addstr(x, y, self.__quitText)
 
   def __printPrompt(self, scr, pos, step, prompts=defaultPrompts):

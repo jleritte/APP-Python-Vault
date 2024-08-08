@@ -50,7 +50,8 @@ export class Login extends Div {
         inputOptions = {onkeydown, value:''}
     inputOptions.className = 'uname'
     inputOptions.placeholder = 'Username'
-    new Input(contain, inputOptions)
+    const user = new Input(contain, inputOptions)
+    user.focus()
     inputOptions.className = 'password'
     inputOptions.placeholder = 'Password'
     new Password(contain, inputOptions)
@@ -67,12 +68,13 @@ export class ErrorDiv extends Div {
 }
 
 export class RecordButtons extends Div {
-  constructor(parent,add,edit,deleteR,logout) {
+  constructor(parent,add,edit,deleteR,logout,search) {
     const buttons = super(parent,{className: 'buttons'})
     new Button(buttons,{onclick: logout,textContent: 'Logout'})
     new Button(buttons,{onclick: deleteR,textContent: 'Delete Record'})
     new Button(buttons,{onclick: edit,textContent: 'Edit Record'})
     new Button(buttons,{onclick: add,textContent: 'Add Record'})
+    new Input(buttons,{oninput: search,placeholder:'Search'})
 
     return buttons
   }
